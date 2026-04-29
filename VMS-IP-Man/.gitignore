@@ -1,0 +1,15 @@
+env.json
+
+# Node.js
+node_modules/
+dist/
+build/
+
+# .NET
+bin/
+obj/
+
+# IDE
+.vs/
+.idea/
+.vscode/
