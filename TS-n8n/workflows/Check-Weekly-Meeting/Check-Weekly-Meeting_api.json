@@ -1,0 +1,406 @@
+{
+    "name":  "Check-Weekly-Meeting",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "url":  "=http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?solYear={{ $json[\u0027Year\u0027] }}\u0026numOfRows=50\u0026ServiceKey=ea205130648aa0e11f1cc778bef29d18ef68b212e587c5590792dbd4f0a6b5c0",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       -464,
+                                       -80
+                                   ],
+                      "id":  "7922801c-edc1-48ea-adef-f6b0a52a3149",
+                      "name":  "HTTP Request",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput"
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  2
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "94cc5a32-5c4b-4b17-8643-a09701554119",
+                                                                                   "leftValue":  "={{ $json.is_holiday }}",
+                                                                                   "rightValue":  false,
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "equals"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       -128,
+                                       -80
+                                   ],
+                      "id":  "6e27bc59-fcae-4944-85ac-7d28150d6cbd",
+                      "name":  "휴일체크",
+                      "alwaysOutputData":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "field":  "weeks",
+                                                                           "triggerAtDay":  [
+                                                                                                1,
+                                                                                                2,
+                                                                                                3,
+                                                                                                4,
+                                                                                                5
+                                                                                            ],
+                                                                           "triggerAtHour":  8,
+                                                                           "triggerAtMinute":  10
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       -640,
+                                       -80
+                                   ],
+                      "id":  "732a73c4-4494-4b38-a243-2eaada5564eb",
+                      "name":  "Clean-DailyScrum",
+                      "alwaysOutputData":  true,
+                      "retryOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const recurringHolidays = [\n  { date: \u00270501\u0027, dateName: \u0027\\uADFC\\uB85C\\uC790\\uC758 \\uB0A0\u0027 },\n  { date: \u00271231\u0027, dateName: \u0027\\uCC3D\\uB9BD\\uAE30\\uB150\\uC77C\\uB300\\uD734\u0027 }\n];\n\nconst baseline = $(\u0027Weekday Baseline\u0027).first().json;\nconst apiPayload = $(\u0027HTTP Request\u0027).first()?.json ?? {};\nconst dbPayload = $(\u0027Holiday DB Fallback\u0027).first()?.json ?? {};\n\nfunction normalizeApiItems(raw) {\n  if (!raw) return [];\n  return Array.isArray(raw) ? raw : [raw];\n}\n\nconst apiItems = !apiPayload.error\n  ? normalizeApiItems(apiPayload.response?.body?.items?.item)\n  : [];\nconst apiMatch = apiItems.find((item) =\u003e String(item?.locdate ?? \u0027\u0027) === String(baseline.todayInt));\nconst customMatch = recurringHolidays.find((item) =\u003e item.date === baseline.todayMMDD);\nconst dbFound = !dbPayload.error \u0026\u0026 [true, 1, \u00271\u0027, \u0027true\u0027].includes(dbPayload.found_in_db);\n\nlet isHoliday = !!baseline.DefaultIsHoliday;\nlet holidayName = baseline.DefaultHolidayName || (isHoliday ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027);\nlet holidayLookupSource = isHoliday ? \u0027default-weekend\u0027 : \u0027default-weekday\u0027;\n\nif (apiMatch) {\n  isHoliday = true;\n  holidayName = String(apiMatch.dateName || \u0027\\uACF5\\uD734\\uC77C\u0027);\n  holidayLookupSource = \u0027api\u0027;\n} else if (customMatch) {\n  isHoliday = true;\n  holidayName = customMatch.dateName;\n  holidayLookupSource = \u0027custom\u0027;\n} else if (dbFound) {\n  isHoliday = true;\n  holidayName = String(dbPayload.holiday_name || \u0027\\uACF5\\uD734\\uC77C\u0027);\n  holidayLookupSource = dbPayload.source_type ? `db:${dbPayload.source_type}` : \u0027db\u0027;\n}\n\nreturn [{\n  json: {\n    check_date: baseline.todayInt,\n    is_holiday: isHoliday,\n    holiday_name: holidayName,\n    is_weekend: !!baseline.IsWeekend,\n    weekday_name: baseline.WeekdayName,\n    holiday_lookup_source: holidayLookupSource,\n    holiday_lookup_failed: Boolean(apiPayload.error) \u0026\u0026 Boolean(dbPayload.error),\n    api_error: apiPayload.error?.message || apiPayload.error || \u0027\u0027,\n    db_error: dbPayload.error || \u0027\u0027\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -288,
+                                       -80
+                                   ],
+                      "id":  "4b790e44-209d-41f6-bf87-97a9552e4efe",
+                      "name":  "공공데이터 조회",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "url":  "=https://graph.microsoft.com/v1.0/me/calendar/calendarView",
+                                         "authentication":  "predefinedCredentialType",
+                                         "nodeCredentialType":  "microsoftOutlookOAuth2Api",
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "startDateTime",
+                                                                                        "value":  "={{ DateTime.now().setZone(\u0027Asia/Seoul\u0027).startOf(\u0027day\u0027).toISO() }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "endDateTime",
+                                                                                        "value":  "={{ DateTime.now().setZone(\u0027Asia/Seoul\u0027).endOf(\u0027day\u0027).toISO() }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "$select",
+                                                                                        "value":  "subject,start,end,location,webLink,type,seriesMasterId"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "$top",
+                                                                                        "value":  "50"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Prefer",
+                                                                                         "value":  "outlook.timezone=\"Asia/Seoul\""
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       48,
+                                       -208
+                                   ],
+                      "id":  "97a44f9e-0fa6-4dd5-8dcd-536eb1d0ff7d",
+                      "name":  "오늘 일정 조회",
+                      "credentials":  {
+                                          "microsoftOutlookOAuth2Api":  {
+                                                                            "id":  "QrARH25rhyVoJNXv",
+                                                                            "name":  "jwkim"
+                                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const targetSubject = \u0027기술지원파트 주간회의\u0027;\nconst response = $input.first().json;\nconst events = Array.isArray(response.value) ? response.value : [];\n\nconst matched = events.find((event) =\u003e {\n  const subject = (event.subject ?? \u0027\u0027).toString().trim();\n  return subject === targetSubject;\n});\n\nif (!matched) {\n  return [];\n}\n\nconst startDateTime = matched.start?.dateTime ?? \u0027\u0027;\nconst endDateTime = matched.end?.dateTime ?? \u0027\u0027;\nconst start = startDateTime ? new Date(startDateTime) : null;\nconst end = endDateTime ? new Date(endDateTime) : null;\n\nconst dateText = start\n  ? new Intl.DateTimeFormat(\u0027ko-KR\u0027, {\n      timeZone: \u0027Asia/Seoul\u0027,\n      year: \u0027numeric\u0027,\n      month: \u0027long\u0027,\n      day: \u0027numeric\u0027,\n      weekday: \u0027short\u0027\n    }).format(start)\n  : \u0027\u0027;\n\nconst timeText = start \u0026\u0026 end\n  ? `${new Intl.DateTimeFormat(\u0027ko-KR\u0027, {\n      timeZone: \u0027Asia/Seoul\u0027,\n      hour: \u0027numeric\u0027,\n      minute: \u00272-digit\u0027,\n      hour12: true\n    }).format(start)} ~ ${new Intl.DateTimeFormat(\u0027ko-KR\u0027, {\n      timeZone: \u0027Asia/Seoul\u0027,\n      hour: \u0027numeric\u0027,\n      minute: \u00272-digit\u0027,\n      hour12: true\n    }).format(end)}`\n  : \u0027\u0027;\n\nreturn [{\n  json: {\n    meetingTitle: matched.subject ?? targetSubject,\n    meetingStart: startDateTime,\n    meetingEnd: endDateTime,\n    meetingDateText: dateText,\n    meetingTimeText: timeText,\n    meetingLocation: matched.location?.displayName ?? \u0027\u0027,\n    meetingWebLink: matched.webLink ?? \u0027\u0027,\n    meetingType: matched.type ?? \u0027\u0027,\n    rawEvent: matched\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       240,
+                                       -208
+                                   ],
+                      "id":  "9f5dc484-f314-457b-8757-cadbd7fbeb5e",
+                      "name":  "오늘 주간회의 확인",
+                      "alwaysOutputData":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "resource":  "databasePage",
+                                         "operation":  "getAll",
+                                         "databaseId":  {
+                                                            "__rl":  true,
+                                                            "value":  "205cb995-8309-80e4-ac2a-c8589a1783eb",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "기술지원캘린더DB",
+                                                            "cachedResultUrl":  "https://www.notion.so/205cb995830980e4ac2ac8589a1783eb"
+                                                        },
+                                         "options":  {
+                                                         "sort":  {
+                                                                      "sortValue":  [
+                                                                                        {
+                                                                                            "key":  "Date|date",
+                                                                                            "direction":  "descending"
+                                                                                        }
+                                                                                    ]
+                                                                  }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.notion",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       448,
+                                       -208
+                                   ],
+                      "id":  "d1d6e3c7-23d4-40db-8f2a-834d9cb0e0a2",
+                      "name":  "기술지원캘린더",
+                      "credentials":  {
+                                          "notionApi":  {
+                                                            "id":  "LrLyYGhPvHMbPfZm",
+                                                            "name":  "tsupport API"
+                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const meeting = $(\u0027오늘 주간회의 확인\u0027).first().json;\nconst vacationItems = $(\u0027기술지원캘린더\u0027).all();\nconst WEEKLY_MEETING_PAGE_URL = \u0027https://app.notion.com/p/vmssolutions/ae3617323a5945fda70db4c1d8c8086d?v=2decb99583098030b178000c5d32f6cc\u0027;\nconst SPRINT_PAGE_URL = \u0027https://app.notion.com/p/vmssolutions/Sprint-2decb995830980e7910cd3495f371466\u0027;\n\nconst now = new Date();\nconst todayKST = new Intl.DateTimeFormat(\u0027sv-SE\u0027, {\n  timeZone: \u0027Asia/Seoul\u0027\n}).format(now);\n\nconst dateString = new Intl.DateTimeFormat(\u0027ko-KR\u0027, {\n  timeZone: \u0027Asia/Seoul\u0027,\n  year: \u0027numeric\u0027,\n  month: \u0027long\u0027,\n  day: \u0027numeric\u0027,\n  weekday: \u0027short\u0027\n}).format(now);\n\nconst allUsers = [\n  { name: \u0027조현재\u0027, email: \u0027jyi30@vms-solutions.com\u0027 },\n  { name: \u0027김민영\u0027, email: \u0027mykim@vms-solutions.com\u0027 },\n  { name: \u0027김진욱\u0027, email: \u0027jwkim@vms-solutions.com\u0027 }\n];\n\nconst cleanStr = (str) =\u003e (str ?? \u0027\u0027).toString().normalize(\u0027NFC\u0027).trim();\nconst norm = (str) =\u003e cleanStr(str).replace(/\\s+/g, \u0027\u0027).toLowerCase();\n\nfunction collectStrings(value, result = [], depth = 0) {\n  if (depth \u003e 10 || value == null) return result;\n\n  if (typeof value === \u0027string\u0027 || typeof value === \u0027number\u0027 || typeof value === \u0027boolean\u0027) {\n    result.push(String(value));\n    return result;\n  }\n\n  if (Array.isArray(value)) {\n    for (const v of value) collectStrings(v, result, depth + 1);\n    return result;\n  }\n\n  if (typeof value === \u0027object\u0027) {\n    for (const v of Object.values(value)) collectStrings(v, result, depth + 1);\n  }\n\n  return result;\n}\n\nfunction itemToSearchText(item) {\n  return collectStrings(item?.json ?? item).join(\u0027 \u0027);\n}\n\nfunction isVacationText(text) {\n  const t = norm(text);\n  return [\n    \u0027휴가\u0027,\n    \u0027연차\u0027,\n    \u0027반차\u0027,\n    \u0027오전반차\u0027,\n    \u0027오후반차\u0027,\n    \u0027공가\u0027,\n    \u0027휴일\u0027,\n    \u0027공휴일\u0027,\n    \u0027명절\u0027,\n    \u0027휴무\u0027,\n    \u0027안식월\u0027,\n    \u0027sabbatical\u0027,\n    \u0027leave\u0027,\n    \u0027vacation\u0027,\n    \u0027pto\u0027,\n    \u0027dayoff\u0027,\n    \u0027off\u0027\n  ].some((keyword) =\u003e t.includes(norm(keyword)));\n}\n\nfunction extractAllYmds(text) {\n  return String(text ?? \u0027\u0027).match(/\\d{4}-\\d{2}-\\d{2}/g) || [];\n}\n\nfunction extractYmd(str) {\n  const m = String(str ?? \u0027\u0027).match(/\\d{4}-\\d{2}-\\d{2}/);\n  return m ? m[0] : \u0027\u0027;\n}\n\nfunction extractDateRanges(item) {\n  const obj = item?.json ?? item;\n  const ranges = [];\n  const seen = new Set();\n\n  function pushRange(key, start, end) {\n    const s = extractYmd(start);\n    const e = extractYmd(end || start);\n    if (!s) return;\n\n    const uniq = `${key}|${s}|${e}`;\n    if (seen.has(uniq)) return;\n    seen.add(uniq);\n\n    ranges.push({ key, start: s, end: e || s });\n  }\n\n  function walk(value, path = \u0027root\u0027, depth = 0) {\n    if (depth \u003e 8 || value == null) return;\n\n    if (typeof value === \u0027string\u0027) {\n      const ymds = extractAllYmds(value);\n      if (ymds.length === 1) pushRange(path, ymds[0], ymds[0]);\n      else if (ymds.length \u003e= 2) pushRange(path, ymds[0], ymds[1]);\n      return;\n    }\n\n    if (typeof value === \u0027number\u0027 || typeof value === \u0027boolean\u0027) return;\n\n    if (Array.isArray(value)) {\n      value.forEach((v, idx) =\u003e walk(v, `${path}[${idx}]`, depth + 1));\n      return;\n    }\n\n    if (typeof value === \u0027object\u0027) {\n      if (\u0027start\u0027 in value \u0026\u0026 extractYmd(value.start)) {\n        pushRange(`${path}.startEnd`, value.start, value.end || value.start);\n      }\n\n      if (\u0027date\u0027 in value \u0026\u0026 value.date \u0026\u0026 typeof value.date === \u0027object\u0027 \u0026\u0026 extractYmd(value.date.start)) {\n        pushRange(`${path}.date`, value.date.start, value.date.end || value.date.start);\n      }\n\n      if (\n        \u0027formula\u0027 in value \u0026\u0026\n        value.formula \u0026\u0026\n        typeof value.formula === \u0027object\u0027 \u0026\u0026\n        value.formula.type === \u0027date\u0027 \u0026\u0026\n        value.formula.date \u0026\u0026\n        extractYmd(value.formula.date.start)\n      ) {\n        pushRange(`${path}.formula.date`, value.formula.date.start, value.formula.date.end || value.formula.date.start);\n      }\n\n      for (const [k, v] of Object.entries(value)) {\n        walk(v, `${path}.${k}`, depth + 1);\n      }\n    }\n  }\n\n  walk(obj);\n  return ranges;\n}\n\nfunction isTodayIncluded(start, end, today) {\n  if (!start) return false;\n  const realEnd = end || start;\n  return start \u003c= today \u0026\u0026 today \u003c= realEnd;\n}\n\nconst todayVacationItems = vacationItems.filter((item) =\u003e {\n  const text = itemToSearchText(item);\n  if (!isVacationText(text)) return false;\n\n  const ranges = extractDateRanges(item);\n  if (ranges.length === 0) return false;\n\n  return ranges.some((r) =\u003e isTodayIncluded(r.start, r.end, todayKST));\n});\n\nconst vacationUsers = allUsers.filter((user) =\u003e {\n  return todayVacationItems.some((item) =\u003e {\n    const text = itemToSearchText(item);\n    return norm(text).includes(norm(user.name)) || norm(text).includes(norm(user.email));\n  });\n});\n\nconst vacationUserEmails = new Set(vacationUsers.map((u) =\u003e u.email));\nconst activeUsers = allUsers.filter((u) =\u003e !vacationUserEmails.has(u.email));\n\nlet teamsText = \u0027지원 담당자\u0027;\nlet teamsEntities = [];\n\nif (activeUsers.length \u003e 0) {\n  teamsText = activeUsers.map((u) =\u003e `\u003cat\u003e${u.name}\u003c/at\u003e`).join(\u0027, \u0027);\n  teamsEntities = activeUsers.map((u) =\u003e ({\n    type: \u0027mention\u0027,\n    text: `\u003cat\u003e${u.name}\u003c/at\u003e`,\n    mentioned: { id: u.email, name: u.name }\n  }));\n}\n\nconst vacationText = vacationUsers.length \u003e 0\n  ? vacationUsers.map((u) =\u003e u.name).join(\u0027, \u0027)\n  : \u0027없음\u0027;\n\nreturn [{\n  json: {\n    teamsText,\n    teamsEntities,\n    date: dateString,\n    meetingTitle: meeting.meetingTitle,\n    meetingDateText: meeting.meetingDateText,\n    meetingTimeText: meeting.meetingTimeText,\n    meetingLocation: meeting.meetingLocation || \u0027미지정\u0027,\n    meetingWebLink: meeting.meetingWebLink || \u0027\u0027,\n    weeklyMeetingPageUrl: WEEKLY_MEETING_PAGE_URL,\n    sprintPageUrl: SPRINT_PAGE_URL,\n    weeklyMeetingLinksMarkdown: `Weekly Meeting: [Open](${WEEKLY_MEETING_PAGE_URL})\\nSprint: [Open](${SPRINT_PAGE_URL})`,\n    activeUserCount: activeUsers.length,\n    activeUsersText: activeUsers.length \u003e 0 ? activeUsers.map((u) =\u003e u.name).join(\u0027, \u0027) : \u0027없음\u0027,\n    vacationUsersText: vacationText,\n    messageSummary: `${meeting.meetingDateText} ${meeting.meetingTimeText}`.trim()\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       672,
+                                       -208
+                                   ],
+                      "id":  "0f9cd1d3-5078-4908-a165-0fb2e111f4af",
+                      "name":  "회의 알림 대상 및 팀즈 메시지 생성",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://redacted.invalid/powerautomate/webhook",
+                                         "sendBody":  true,
+                                         "contentType":  "=json",
+                                         "specifyBody":  "json",
+                                         "bodyParameters":  {
+                                                                "parameters":  [
+                                                                                   {
+
+                                                                                   }
+                                                                               ]
+                                                            },
+                                         "jsonBody":  "={\n  \"type\": \"message\",\n  \"attachments\": [\n    {\n      \"contentType\": \"application/vnd.microsoft.card.adaptive\",\n      \"content\": {\n        \"type\": \"AdaptiveCard\",\n        \"body\": [\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"?? {{ $json.teamsText }} ?, ?? ?????? ????? ????.\",\n            \"weight\": \"Bolder\",\n            \"size\": \"Large\",\n            \"wrap\": true\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"{{ $json.meetingTitle }}\",\n            \"weight\": \"Bolder\",\n            \"spacing\": \"Medium\",\n            \"wrap\": true\n          },\n          {\n            \"type\": \"FactSet\",\n            \"facts\": [\n              {\n                \"title\": \"??\",\n                \"value\": \"{{ $json.meetingDateText || $json.date }}\"\n              },\n              {\n                \"title\": \"??\",\n                \"value\": \"{{ $json.meetingTimeText || \u0027??\u0027 }}\"\n              },\n              {\n                \"title\": \"??\",\n                \"value\": \"{{ $json.meetingLocation || \u0027???\u0027 }}\"\n              },\n              {\n                \"title\": \"?? ??\",\n                \"value\": \"{{ $json.activeUsersText || \u0027??\u0027 }}\"\n              },\n              {\n                \"title\": \"???\",\n                \"value\": \"{{ $json.vacationUsersText || \u0027??\u0027 }}\"\n              }\n            ]\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"?? Sprint ? ??? ?? ? ?? ??????.\",\n            \"wrap\": true,\n            \"spacing\": \"Medium\"\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"1. ?? ? Sprint ??\n2. ?? ? Sprint ??\n3. ?? ??? ????\",\n            \"wrap\": true,\n            \"spacing\": \"Small\"\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"{{ $json.weeklyMeetingLinksMarkdown }}\",\n            \"wrap\": true,\n            \"spacing\": \"Medium\"\n          }\n        ],\n        \"actions\": {{ JSON.stringify([\n          ...($json.meetingWebLink ? [{ \"type\": \"Action.OpenUrl\", \"title\": \"Open Outlook Event\", \"url\": $json.meetingWebLink }] : []),\n          { \"type\": \"Action.OpenUrl\", \"title\": \"Open Weekly Meeting Page\", \"url\": $json.weeklyMeetingPageUrl },\n          { \"type\": \"Action.OpenUrl\", \"title\": \"Open Sprint Page\", \"url\": $json.sprintPageUrl }\n        ]) }},\n        \"msteams\": {\n          \"entities\": {{ JSON.stringify($json.teamsEntities) }}\n        },\n        \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n        \"version\": \"1.4\"\n      }\n    }\n  ]\n}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       928,
+                                       -208
+                                   ],
+                      "id":  "e96b4bb6-abf4-4c36-9b1d-f1b0ea9233b2",
+                      "name":  "주간회의 팀즈 알림 전송",
+                      "alwaysOutputData":  false,
+                      "executeOnce":  false,
+                      "notesInFlow":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const source = $input.first()?.json ?? {};\nconst now = new Date();\nconst parts = new Intl.DateTimeFormat(\u0027en-CA\u0027, {\n  timeZone: \u0027Asia/Seoul\u0027,\n  year: \u0027numeric\u0027,\n  month: \u00272-digit\u0027,\n  day: \u00272-digit\u0027,\n  weekday: \u0027short\u0027\n}).formatToParts(now);\n\nconst year = parts.find((p) =\u003e p.type === \u0027year\u0027)?.value;\nconst month = parts.find((p) =\u003e p.type === \u0027month\u0027)?.value;\nconst day = parts.find((p) =\u003e p.type === \u0027day\u0027)?.value;\nconst weekdayName = parts.find((p) =\u003e p.type === \u0027weekday\u0027)?.value;\n\nif (!year || !month || !day || !weekdayName) {\n  throw new Error(\u0027Failed to resolve current date in Asia/Seoul.\u0027);\n}\n\nconst todayInt = Number(`${year}${month}${day}`);\nconst todayDate = `${year}-${month}-${day}`;\nconst todayMMDD = `${month}${day}`;\nconst isWeekend = [\u0027Sat\u0027, \u0027Sun\u0027].includes(weekdayName);\n\nreturn [{\n  json: {\n    ...source,\n    Year: Number(year),\n    Month: Number(month),\n    Day: Number(day),\n    WeekdayName: weekdayName,\n    IsWeekend: isWeekend,\n    DefaultIsHoliday: isWeekend,\n    DefaultHolidayName: isWeekend ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027,\n    todayInt,\n    todayDate,\n    todayMMDD\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -688,
+                                       -80
+                                   ],
+                      "id":  "d5f1aa5a-21a7-4bfb-9252-2f9d36b656a7",
+                      "name":  "Weekday Baseline",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "=DECLARE @d DATE = CAST(\u0027{{ $(\u0027Weekday Baseline\u0027).item.json.todayDate }}\u0027 AS date);\nSELECT\n    CONVERT(VARCHAR(8), @d, 112) AS check_date,\n    CAST(CASE WHEN EXISTS (\n        SELECT 1\n        FROM TsMgmt.dbo.HolidayCalendarKR\n        WHERE HolidayDate = @d\n    ) THEN 1 ELSE 0 END AS bit) AS found_in_db,\n    ISNULL((SELECT TOP 1 HolidayName FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS holiday_name,\n    ISNULL((SELECT TOP 1 SourceType FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS source_type,\n    ISNULL((SELECT TOP 1 SourceYear FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), 0) AS source_year;"
+                                     },
+                      "type":  "n8n-nodes-base.microsoftSql",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       -464,
+                                       -80
+                                   ],
+                      "id":  "648ad0e1-353d-433a-9dcc-02d54174fe15",
+                      "name":  "Holiday DB Fallback",
+                      "alwaysOutputData":  true,
+                      "credentials":  {
+                                          "microsoftSql":  {
+                                                               "id":  "2dZb5OQPbTyO3052",
+                                                               "name":  "TsMgmt(DevTest_SQL2022_26)"
+                                                           }
+                                      },
+                      "onError":  "continueRegularOutput"
+                  }
+              ],
+    "connections":  {
+                        "HTTP Request":  {
+                                             "main":  [
+                                                          [
+                                                              {
+                                                                  "node":  "Holiday DB Fallback",
+                                                                  "type":  "main",
+                                                                  "index":  0
+                                                              }
+                                                          ]
+                                                      ]
+                                         },
+                        "휴일체크":  {
+                                     "main":  [
+                                                  [
+                                                      {
+                                                          "node":  "오늘 일정 조회",
+                                                          "type":  "main",
+                                                          "index":  0
+                                                      }
+                                                  ]
+                                              ]
+                                 },
+                        "Clean-DailyScrum":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "Weekday Baseline",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "공공데이터 조회":  {
+                                         "main":  [
+                                                      [
+                                                          {
+                                                              "node":  "휴일체크",
+                                                              "type":  "main",
+                                                              "index":  0
+                                                          }
+                                                      ]
+                                                  ]
+                                     },
+                        "오늘 일정 조회":  {
+                                         "main":  [
+                                                      [
+                                                          {
+                                                              "node":  "오늘 주간회의 확인",
+                                                              "type":  "main",
+                                                              "index":  0
+                                                          }
+                                                      ]
+                                                  ]
+                                     },
+                        "오늘 주간회의 확인":  {
+                                           "main":  [
+                                                        [
+                                                            {
+                                                                "node":  "기술지원캘린더",
+                                                                "type":  "main",
+                                                                "index":  0
+                                                            }
+                                                        ]
+                                                    ]
+                                       },
+                        "기술지원캘린더":  {
+                                        "main":  [
+                                                     [
+                                                         {
+                                                             "node":  "회의 알림 대상 및 팀즈 메시지 생성",
+                                                             "type":  "main",
+                                                             "index":  0
+                                                         }
+                                                     ]
+                                                 ]
+                                    },
+                        "회의 알림 대상 및 팀즈 메시지 생성":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "주간회의 팀즈 알림 전송",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "Weekday Baseline":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "HTTP Request",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "Holiday DB Fallback":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "공공데이터 조회",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "callerPolicy":  "workflowsFromSameOwner",
+                     "availableInMCP":  false
+                 }
+}

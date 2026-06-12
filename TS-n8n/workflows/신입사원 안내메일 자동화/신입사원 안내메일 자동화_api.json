@@ -1,0 +1,387 @@
+{
+    "name":  "신입사원 안내메일 자동화",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "pollTimes":  {
+                                                           "item":  [
+                                                                        {
+                                                                            "mode":  "everyX",
+                                                                            "unit":  "minutes"
+                                                                        }
+                                                                    ]
+                                                       },
+                                         "output":  "raw",
+                                         "filters":  {
+                                                         "foldersToInclude":  [
+                                                                                  "AAMkAGUwZTBhZjI5LTgxMjYtNDQ5OS05ZTEyLTVmMTgxYzllMjI0YwAuAAAAAACdMZb9wRBfRYR_0ItO9bHeAQDUqVrk8IEkTqiAUrQoXMR_AAZvvk5IAAA="
+                                                                              ],
+                                                         "readStatus":  "both"
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.microsoftOutlookTrigger",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -96,
+                                       0
+                                   ],
+                      "id":  "34c0c91f-0312-4636-afc2-fedd1fb5f1a7",
+                      "name":  "신입사원 관련 메일 수신",
+                      "credentials":  {
+                                          "microsoftOutlookOAuth2Api":  {
+                                                                            "id":  "QrARH25rhyVoJNXv",
+                                                                            "name":  "tsupport"
+                                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  2
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "fad938c3-cf60-47df-a912-695f4710218a",
+                                                                                   "leftValue":  "={{ $json.from.emailAddress.address }}",
+                                                                                   "rightValue":  "ymjeon@vms-solutions.com",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "equals",
+                                                                                                    "name":  "filter.operator.equals"
+                                                                                                }
+                                                                               },
+                                                                               {
+                                                                                   "id":  "7ec7e8a9-3a0d-4049-9efa-80863d5d2232",
+                                                                                   "leftValue":  "={{ $json.from.emailAddress.address }}",
+                                                                                   "rightValue":  "jbyoon@vms-solutions.com",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "equals",
+                                                                                                    "name":  "filter.operator.equals"
+                                                                                                }
+                                                                               },
+                                                                               {
+                                                                                   "id":  "ac1fb95b-e358-4673-a39a-ad48adf04b6e",
+                                                                                   "leftValue":  "={{ $json.from.emailAddress.address }}",
+                                                                                   "rightValue":  "jihyeon@vms-solutions.com",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "equals",
+                                                                                                    "name":  "filter.operator.equals"
+                                                                                                }
+                                                                               },
+                                                                               {
+                                                                                   "id":  "6bd056ea-49f1-4ccb-9bab-1682df09ff4d",
+                                                                                   "leftValue":  "={{ $json.from.emailAddress.address }}",
+                                                                                   "rightValue":  "beomsoo99@vms-solutions.com",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "equals",
+                                                                                                    "name":  "filter.operator.equals"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "or"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       272,
+                                       -128
+                                   ],
+                      "id":  "2fd186d8-be0b-48ff-a9f4-c5a78d616051",
+                      "name":  "메일 발신자 확인"
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  2
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "6304b6d0-b231-4d56-9618-f107216801ed",
+                                                                                   "leftValue":  "={{ $json.subject }}",
+                                                                                   "rightValue":  "신입사원 계정발급",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "contains"
+                                                                                                }
+                                                                               },
+                                                                               {
+                                                                                   "id":  "89e17310-6a1e-48e5-8d76-b70066c17ef8",
+                                                                                   "leftValue":  "={{ $json.subject }}",
+                                                                                   "rightValue":  "신규 입사자 계정발급",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "contains"
+                                                                                                }
+                                                                               },
+                                                                               {
+                                                                                   "id":  "7e4a061c-1e35-4418-b9c8-0279eda19713",
+                                                                                   "leftValue":  "={{ $json.subject }}",
+                                                                                   "rightValue":  "신입사원 안내",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "contains"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "or"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       464,
+                                       -128
+                                   ],
+                      "id":  "8d262b86-8e87-47a3-a353-e0be607ac9f4",
+                      "name":  "신입사원 안내 메일 확인"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "update",
+                                         "messageId":  {
+                                                           "__rl":  true,
+                                                           "value":  "={{ $json.id }}",
+                                                           "mode":  "id"
+                                                       },
+                                         "updateFields":  {
+                                                              "isRead":  true
+                                                          }
+                                     },
+                      "type":  "n8n-nodes-base.microsoftOutlook",
+                      "typeVersion":  2,
+                      "position":  [
+                                       656,
+                                       -112
+                                   ],
+                      "id":  "4e0a806b-4b9b-4aca-84fa-6fb1d3af9509",
+                      "name":  "메일 상태 읽음으로 변경",
+                      "webhookId":  "91b18ffe-f7c9-43ab-9591-3f3202315019",
+                      "credentials":  {
+                                          "microsoftOutlookOAuth2Api":  {
+                                                                            "id":  "QrARH25rhyVoJNXv",
+                                                                            "name":  "tsupport"
+                                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "move",
+                                         "messageId":  {
+                                                           "__rl":  true,
+                                                           "value":  "={{ $(\u0027신입사원 관련 메일 수신\u0027).item.json.id }}",
+                                                           "mode":  "id"
+                                                       },
+                                         "folderId":  {
+                                                          "__rl":  true,
+                                                          "value":  "AAMkAGUwZTBhZjI5LTgxMjYtNDQ5OS05ZTEyLTVmMTgxYzllMjI0YwAuAAAAAACdMZb9wRBfRYR_0ItO9bHeAQDUqVrk8IEkTqiAUrQoXMR_AAAAAAEMAAA=",
+                                                          "mode":  "list",
+                                                          "cachedResultName":  "받은 편지함",
+                                                          "cachedResultUrl":  "https://outlook.office365.com/mail/AAMkAGUwZTBhZjI5LTgxMjYtNDQ5OS05ZTEyLTVmMTgxYzllMjI0YwAuAAAAAACdMZb9wRBfRYR_0ItO9bHeAQDUqVrk8IEkTqiAUrQoXMR_AAAAAAEMAAA%3D"
+                                                      }
+                                     },
+                      "type":  "n8n-nodes-base.microsoftOutlook",
+                      "typeVersion":  2,
+                      "position":  [
+                                       656,
+                                       48
+                                   ],
+                      "id":  "773e2cd1-1849-4984-aee9-e778d8168ab7",
+                      "name":  "메일 사서함 변경",
+                      "webhookId":  "e578bf17-3bd0-4970-af12-a9dc98ac3f85",
+                      "credentials":  {
+                                          "microsoftOutlookOAuth2Api":  {
+                                                                            "id":  "QrARH25rhyVoJNXv",
+                                                                            "name":  "tsupport"
+                                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "toRecipients":  "={{ $node[\"신입사원 관련 메일 수신\"].json.toRecipients.map(item =\u003e item.emailAddress.address).join(\u0027,\u0027) }}",
+                                         "subject":  "=RE: {{ $json.subject }}",
+                                         "bodyContent":  "=\u003cdiv style=\"font-size:14px; font-family:\u0027Malgun Gothic\u0027, sans-serif; line-height:1.8;\"\u003e\n\n    \u003cp style=\"margin: 0 0 10px 0;\"\u003e안녕하십니까 기술지원파트입니다.\u003c/p\u003e\n    \n    \u003cp style=\"margin: 0 0 10px 0;\"\u003e우선 입사를 축하 드립니다.\u003c/p\u003e\n\n    \u003cp style=\"margin: 0 0 10px 0;\"\u003e회사 내 시스템을 이용하기 위해서는 몇 가지 시스템에 계정 생성 및 가입이 필요합니다.\u003cbr\u003e\n    수신된 회사 이메일을 계정으로 아래 가이드를 참조하여 회원 가입을 진행 주시기 바랍니다.\u003c/p\u003e\n\n    \u003cp style=\"margin: 15px 0 5px 0;\"\u003e\n        \u003cstrong\u003e\n            1. 신규 입사자 가이드 (\u003ca href=\"https://vmssolutions.notion.site/79132db898854d81acbed7096812b210\"\u003e바로가기\u003c/a\u003e) – 교육 신청과 제품 관련 서비스를 요청을 위한 Support Portal 홈페이지 가입\n        \u003c/strong\u003e\n    \u003c/p\u003e\n    \u003cul style=\"margin: 5px 0 15px 15px; padding: 0;\"\u003e\n        \u003cli\u003eSupport Portal 홈페이지: \u003ca href=\"http://www.vmsmozart.com\"\u003ehttp://www.vmsmozart.com\u003c/a\u003e\u003c/li\u003e\n        \u003cli\u003eSupport Portal 가입 Company Code: \u003cstrong\u003eVMS201401\u003c/strong\u003e\u003c/li\u003e\n        \u003cli\u003e홈페이지 가입 시 이름 입력란 (First Name: 이름, Last Name: 성)에 \u003cstrong\u003e한글\u003c/strong\u003e로 이름을 입력해주시기 바랍니다.\u003c/li\u003e\n    \u003c/ul\u003e\n\n    \u003cp style=\"margin: 15px 0 5px 0;\"\u003e\n        \u003cstrong\u003e\n            2. 노션 온라인 회원 가입 (\u003ca href=\"https://notion.so\"\u003e노션사이트 이동\u003c/a\u003e) 및 가입 이메일 회신 - 온라인 기술문서를 확인하기 위한 노션 가입\n        \u003c/strong\u003e\n    \u003c/p\u003e\n    \u003cul style=\"margin: 5px 0 15px 15px; padding: 0;\"\u003e\n        \u003cli\u003e가입 시 꼭 회사 메일로 계정 생성 부탁드립니다.\u003c/li\u003e\n        \u003cli\u003e가입 후 \u003cstrong style=\"color:#08baff;\"\u003e가입 완료 메일 회신\u003c/strong\u003e 부탁드립니다.\u003c/li\u003e\n    \u003c/ul\u003e\n    \n    \u003cp style=\"margin: 15px 0 10px 0;\"\u003e제품과 관련해서 문의 사항은 기술지원파트로 문의를 주시면 됩니다.\u003cbr\u003e\n    아래 기술지원 제공 서비스 가이드를 참고하여 확인하여 주시기 바랍니다.\u003c/p\u003e\n\n    \u003cul style=\"margin: 5px 0 15px 15px; padding: 0;\"\u003e\n        \u003cli\u003e기술지원 제공 서비스 가이드: \u003ca href=\"https://vmssolutions.notion.site/582c0d58bf934714a31a7daad5fd6f3a\"\u003e바로가기\u003c/a\u003e\u003c/li\u003e\n        \u003cli\u003e\u003cstrong\u003eWindows 및 Visual Studio 다운로드 및 제품 키\u003c/strong\u003e가 신규 입사자 가이드에 포함되어 있습니다.\u003c/li\u003e\n        \u003cli\u003e\u003cstrong\u003eVisual Studio 설치 초기 Mozart Explorer가 보이지 않는 이슈\u003c/strong\u003e가 발생할 경우:\n            \u003ca href=\"https://vmssolutions.notion.site/Visual-Studio-2019-2022-MOZART-Explorer-b7f18a835f5b43eea23a3d9097873052?pvs=143\"\u003e바로가기\u003c/a\u003e\n        \u003c/li\u003e\n    \u003c/ul\u003e\n\n    \u003cp style=\"margin: 15px 0 10px 0;\"\u003e그 외 질문 사항이 있으면 본 메일 (\u003ca href=\"mailto:support@vms-solutions.com\"\u003esupport@vms-solutions.com\u003c/a\u003e)로 회신 문의 주시기 바랍니다.\u003c/p\u003e\n\n    \u003cp style=\"margin: 10px 0 20px 0;\"\u003e감사합니다.\u003c/p\u003e\n\n    \u003chr style=\"border-top: 1px solid #ddd; margin: 20px 0;\"\u003e\n\n    \u003cdiv style=\"font-size:13px; color:#404040; line-height:1.4;\"\u003e\n        \u003cp style=\"margin: 0; padding: 0;\"\u003e\n            \u003cimg src=\"https://ssproxy.ucloudbiz.olleh.com/v1/AUTH_28b3e23f-3839-4260-a4fe-9d324423f8fb/VMSEDU/image001.jpg\" width=\"121\" height=\"41\" alt=\"VMS 로고\"\u003e\n        \u003c/p\u003e\n        \u003cstrong\u003eVMS Solutions Product Support\u003c/strong\u003e\n        \u003cp style=\"margin: 5px 0 0 0; padding: 0;\"\u003e20F-2001, Knowledge Industry Center, Bundang Suji U-Tower Bldg,\u003c/p\u003e\n        \u003cp style=\"margin: 0; padding: 0;\"\u003e767, Shinsu-ro, Suji-gu, Yongin-si, Gyeonggi-do, 16827, Republic of South Korea\u003c/p\u003e\n        \n        \u003cp style=\"margin: 5px 0 0 0; padding: 0;\"\u003e\n            \u003cspan style=\"color:#f28c00; font-weight:bold;\"\u003eT\u003c/span\u003e +82 31 276 4746 |\n            \u003cspan style=\"color:#f28c00; font-weight:bold;\"\u003eF\u003c/span\u003e +82 31 218 4744\n        \u003c/p\u003e\n        \n        \u003cp style=\"margin: 0; padding: 0;\"\u003e\n            \u003cspan style=\"color:#f28c00; font-weight:bold;\"\u003eE\u003c/span\u003e \n            \u003ca href=\"mailto:support@vms-solutions.com\" style=\"color:#404040; text-decoration:none;\"\u003esupport@vms-solutions.com\u003c/a\u003e |\n            \u003cspan style=\"color:#f28c00; font-weight:bold;\"\u003eW\u003c/span\u003e \n            \u003ca href=\"http://www.vmsmozart.com\" style=\"color:#404040; text-decoration:none;\"\u003ewww.vmsmozart.com\u003c/a\u003e\n        \u003c/p\u003e\n    \u003c/div\u003e\n\u003c/div\u003e",
+                                         "additionalFields":  {
+                                                                  "ccRecipients":  "={{ $json.from.emailAddress.address }}",
+                                                                  "bodyContentType":  "html"
+                                                              }
+                                     },
+                      "type":  "n8n-nodes-base.microsoftOutlook",
+                      "typeVersion":  2,
+                      "position":  [
+                                       864,
+                                       -112
+                                   ],
+                      "id":  "ea1a5edb-2893-4ba3-88ae-7bc9fa866da8",
+                      "name":  "신입사원 안내 메일 발송",
+                      "webhookId":  "a2ddf285-aacc-454f-bf2f-e2d062d88182",
+                      "credentials":  {
+                                          "microsoftOutlookOAuth2Api":  {
+                                                                            "id":  "QrARH25rhyVoJNXv",
+                                                                            "name":  "tsupport"
+                                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  2
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "ac51cd89-c7c1-4448-a300-d8084a6fc617",
+                                                                                   "leftValue":  "={{ $json.subject }}",
+                                                                                   "rightValue":  "re:",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "contains"
+                                                                                                }
+                                                                               },
+                                                                               {
+                                                                                   "id":  "80e69b2b-2790-43d4-b03a-e515b7c8399f",
+                                                                                   "leftValue":  "={{ $json.subject }}",
+                                                                                   "rightValue":  "RE:",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "contains"
+                                                                                                }
+                                                                               },
+                                                                               {
+                                                                                   "id":  "8dd493a7-5423-477d-bf35-cba1ebd302cd",
+                                                                                   "leftValue":  "={{ $json.subject }}",
+                                                                                   "rightValue":  "Re:",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "contains"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "or"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       80,
+                                       0
+                                   ],
+                      "id":  "2895a0bf-182b-4874-9c39-b1ab48229344",
+                      "name":  "답장 여부 확인"
+                  }
+              ],
+    "connections":  {
+                        "신입사원 관련 메일 수신":  {
+                                              "main":  [
+                                                           [
+                                                               {
+                                                                   "node":  "답장 여부 확인",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ]
+                                                       ]
+                                          },
+                        "메일 발신자 확인":  {
+                                          "main":  [
+                                                       [
+                                                           {
+                                                               "node":  "신입사원 안내 메일 확인",
+                                                               "type":  "main",
+                                                               "index":  0
+                                                           }
+                                                       ],
+                                                       [
+                                                           {
+                                                               "node":  "메일 사서함 변경",
+                                                               "type":  "main",
+                                                               "index":  0
+                                                           }
+                                                       ]
+                                                   ]
+                                      },
+                        "신입사원 안내 메일 확인":  {
+                                              "main":  [
+                                                           [
+                                                               {
+                                                                   "node":  "메일 상태 읽음으로 변경",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ],
+                                                           [
+                                                               {
+                                                                   "node":  "메일 사서함 변경",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ]
+                                                       ]
+                                          },
+                        "메일 상태 읽음으로 변경":  {
+                                              "main":  [
+                                                           [
+                                                               {
+                                                                   "node":  "신입사원 안내 메일 발송",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ]
+                                                       ]
+                                          },
+                        "신입사원 안내 메일 발송":  {
+                                              "main":  [
+                                                           [
+
+                                                           ]
+                                                       ]
+                                          },
+                        "답장 여부 확인":  {
+                                         "main":  [
+                                                      [
+                                                          {
+                                                              "node":  "메일 사서함 변경",
+                                                              "type":  "main",
+                                                              "index":  0
+                                                          }
+                                                      ],
+                                                      [
+                                                          {
+                                                              "node":  "메일 발신자 확인",
+                                                              "type":  "main",
+                                                              "index":  0
+                                                          }
+                                                      ]
+                                                  ]
+                                     }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1"
+                 }
+}

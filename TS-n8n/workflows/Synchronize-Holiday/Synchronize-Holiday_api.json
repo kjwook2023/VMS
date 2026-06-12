@@ -1,0 +1,194 @@
+{
+  "name": "Synchronize-Holiday",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        -64
+      ],
+      "id": "7b12e971-1fe8-4d89-b83d-f1ee3d774001",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 5 3 1 1,7 *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -880,
+        96
+      ],
+      "id": "8c40ae24-cbe6-46e5-b393-d88eb95b0002",
+      "name": "Sync Trigger",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst parts = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'Asia/Seoul',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit'\n}).formatToParts(now);\n\nconst year = Number(parts.find((p) => p.type === 'year')?.value);\nconst month = Number(parts.find((p) => p.type === 'month')?.value);\nconst day = Number(parts.find((p) => p.type === 'day')?.value);\n\nif (!year || !month || !day) {\n  throw new Error('Failed to resolve current date in Asia/Seoul.');\n}\n\nconst syncYears = month >= 7 ? [year, year + 1] : [year];\nconst requestedAt = new Intl.DateTimeFormat('sv-SE', {\n  timeZone: 'Asia/Seoul',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n  hour: '2-digit',\n  minute: '2-digit',\n  second: '2-digit',\n  hour12: false\n}).format(now).replace(' ', 'T');\n\nreturn syncYears.map((syncYear) => ({\n  json: {\n    syncYear,\n    requestedAtKst: requestedAt,\n    triggerMonth: month\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        16
+      ],
+      "id": "90ddf818-225e-4309-8df1-4f1d91e00003",
+      "name": "Build Sync Years",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "=http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?solYear={{ $json['syncYear'] }}&numOfRows=50&ServiceKey=ea205130648aa0e11f1cc778bef29d18ef68b212e587c5590792dbd4f0a6b5c0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -400,
+        16
+      ],
+      "id": "d3f5ca76-4660-4d89-8e20-33fe4aa80004",
+      "name": "Holiday API Fetch",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const responses = $input.all();\nconst rowsByDate = new Map();\nconst yearsWithApiData = new Set();\nconst customRecurringHolidays = [\n  { mmdd: '0501', name: '\\uadfc\\ub85c\\uc790\\uc758 \\ub0a0' },\n  { mmdd: '1231', name: '\\ucc3d\\ub9bd\\uae30\\ub150\\uc77c\\ub300\\ud734' }\n];\n\nfunction normalizeItems(raw) {\n  if (!raw) return [];\n  if (Array.isArray(raw)) return raw;\n  return [raw];\n}\n\nfor (const item of responses) {\n  const apiItems = normalizeItems(item.json?.response?.body?.items?.item);\n  for (const holiday of apiItems) {\n    const locdate = String(holiday?.locdate ?? '').trim();\n    if (!/^\\d{8}$/.test(locdate)) continue;\n\n    const sourceYear = Number(locdate.slice(0, 4));\n    const holidayDate = `${locdate.slice(0, 4)}-${locdate.slice(4, 6)}-${locdate.slice(6, 8)}`;\n    const holidayName = String(holiday?.dateName ?? '').trim() || '\\uc774\\ub984\\uc5c6\\uc74c';\n\n    rowsByDate.set(holidayDate, {\n      holidayDate,\n      holidayName,\n      isHoliday: 1,\n      sourceType: 'api',\n      sourceYear\n    });\n    yearsWithApiData.add(sourceYear);\n  }\n}\n\nconst syncedYears = [...yearsWithApiData].sort((a, b) => a - b);\nif (syncedYears.length === 0) {\n  throw new Error('No holiday data was returned from the public holiday API.');\n}\n\nfor (const year of syncedYears) {\n  for (const customHoliday of customRecurringHolidays) {\n    const holidayDate = `${year}-${customHoliday.mmdd.slice(0, 2)}-${customHoliday.mmdd.slice(2, 4)}`;\n    if (rowsByDate.has(holidayDate)) continue;\n\n    rowsByDate.set(holidayDate, {\n      holidayDate,\n      holidayName: customHoliday.name,\n      isHoliday: 1,\n      sourceType: 'custom',\n      sourceYear: year\n    });\n  }\n}\n\nconst rows = [...rowsByDate.values()].sort((a, b) => a.holidayDate.localeCompare(b.holidayDate));\nconst payloadJson = JSON.stringify(rows).replace(/'/g, \"''\");\nconst replaceYears = syncedYears.join(', ');\nconst mergeQuery = `DECLARE @payload NVARCHAR(MAX) = N'${payloadJson}';\nDECLARE @mergeResults TABLE (ActionName NVARCHAR(10));\nDECLARE @sourceRows TABLE (\n    HolidayDate DATE NOT NULL,\n    HolidayName NVARCHAR(100) NOT NULL,\n    IsHoliday BIT NOT NULL,\n    SourceType NVARCHAR(20) NOT NULL,\n    SourceYear INT NOT NULL\n);\n\nINSERT INTO @sourceRows (\n    HolidayDate,\n    HolidayName,\n    IsHoliday,\n    SourceType,\n    SourceYear\n)\nSELECT\n    CAST(JSON_VALUE([value], '$.holidayDate') AS date) AS HolidayDate,\n    CAST(JSON_VALUE([value], '$.holidayName') AS nvarchar(100)) AS HolidayName,\n    CAST(JSON_VALUE([value], '$.isHoliday') AS bit) AS IsHoliday,\n    CAST(JSON_VALUE([value], '$.sourceType') AS nvarchar(20)) AS SourceType,\n    CAST(JSON_VALUE([value], '$.sourceYear') AS int) AS SourceYear\nFROM OPENJSON(@payload);\n\nMERGE TsMgmt.dbo.HolidayCalendarKR AS target\nUSING @sourceRows AS source\n    ON target.HolidayDate = source.HolidayDate\nWHEN MATCHED THEN\n    UPDATE SET\n        HolidayName = source.HolidayName,\n        IsHoliday = source.IsHoliday,\n        SourceType = source.SourceType,\n        SourceYear = source.SourceYear,\n        UpdatedAt = SYSDATETIME()\nWHEN NOT MATCHED BY TARGET THEN\n    INSERT (\n        HolidayDate,\n        HolidayName,\n        IsHoliday,\n        SourceType,\n        SourceYear,\n        CreatedAt,\n        UpdatedAt\n    )\n    VALUES (\n        source.HolidayDate,\n        source.HolidayName,\n        source.IsHoliday,\n        source.SourceType,\n        source.SourceYear,\n        SYSDATETIME(),\n        SYSDATETIME()\n    )\nWHEN NOT MATCHED BY SOURCE AND target.SourceYear IN (${replaceYears}) THEN\n    DELETE\nOUTPUT $action INTO @mergeResults (ActionName);\n\nSELECT\n    '${syncedYears.join(',')}' AS SyncedYears,\n    COUNT(1) AS PayloadCount,\n    SUM(CASE WHEN SourceType = 'api' THEN 1 ELSE 0 END) AS ApiHolidayCount,\n    SUM(CASE WHEN SourceType = 'custom' THEN 1 ELSE 0 END) AS CustomHolidayCount,\n    (SELECT COUNT(1) FROM @mergeResults WHERE ActionName = 'INSERT') AS InsertedCount,\n    (SELECT COUNT(1) FROM @mergeResults WHERE ActionName = 'UPDATE') AS UpdatedCount,\n    (SELECT COUNT(1) FROM @mergeResults WHERE ActionName = 'DELETE') AS DeletedCount,\n    CONVERT(VARCHAR(19), SYSDATETIME(), 120) AS SyncedAt\nFROM @sourceRows;`;\n\nreturn [{\n  json: {\n    syncedYears,\n    payloadCount: rows.length,\n    apiHolidayCount: rows.filter((row) => row.sourceType === 'api').length,\n    customHolidayCount: rows.filter((row) => row.sourceType === 'custom').length,\n    mergeQuery\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        16
+      ],
+      "id": "e4a2f84b-3360-4bfc-aef8-c934d9dd0005",
+      "name": "Normalize Holiday Rows",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "IF OBJECT_ID(N'TsMgmt.dbo.HolidayCalendarKR', N'U') IS NULL\nBEGIN\n    CREATE TABLE TsMgmt.dbo.HolidayCalendarKR (\n        HolidayDate DATE NOT NULL CONSTRAINT PK_HolidayCalendarKR PRIMARY KEY,\n        HolidayName NVARCHAR(100) NOT NULL,\n        IsHoliday BIT NOT NULL CONSTRAINT DF_HolidayCalendarKR_IsHoliday DEFAULT ((1)),\n        SourceType NVARCHAR(20) NOT NULL,\n        SourceYear INT NOT NULL,\n        CreatedAt DATETIME2(0) NOT NULL CONSTRAINT DF_HolidayCalendarKR_CreatedAt DEFAULT (SYSDATETIME()),\n        UpdatedAt DATETIME2(0) NOT NULL CONSTRAINT DF_HolidayCalendarKR_UpdatedAt DEFAULT (SYSDATETIME())\n    );\n\n    CREATE INDEX IX_HolidayCalendarKR_SourceYear\n        ON TsMgmt.dbo.HolidayCalendarKR (SourceYear, HolidayDate);\nEND;"
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        128,
+        -80
+      ],
+      "id": "ff6a8b97-c17c-4d96-9486-512521430006",
+      "name": "Ensure Holiday Table",
+      "alwaysOutputData": true,
+      "credentials": {
+        "microsoftSql": {
+          "id": "2dZb5OQPbTyO3052",
+          "name": "TsMgmt(DevTest_SQL2022_26)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $('Normalize Holiday Rows').item.json.mergeQuery }}"
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        384,
+        -80
+      ],
+      "id": "2e6ed97f-c58f-4746-9dd2-640b4fd40007",
+      "name": "Merge Holiday Rows",
+      "alwaysOutputData": true,
+      "credentials": {
+        "microsoftSql": {
+          "id": "2dZb5OQPbTyO3052",
+          "name": "TsMgmt(DevTest_SQL2022_26)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Sync Years",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Sync Years",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Sync Years": {
+      "main": [
+        [
+          {
+            "node": "Holiday API Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Holiday API Fetch": {
+      "main": [
+        [
+          {
+            "node": "Normalize Holiday Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Holiday Rows": {
+      "main": [
+        [
+          {
+            "node": "Ensure Holiday Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure Holiday Table": {
+      "main": [
+        [
+          {
+            "node": "Merge Holiday Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul"
+  }
+}

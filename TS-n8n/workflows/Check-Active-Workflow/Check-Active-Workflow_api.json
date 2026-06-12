@@ -1,0 +1,480 @@
+{
+    "name":  "Check-Active-Workflow",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "field":  "cronExpression",
+                                                                           "expression":  "0 0 7 * * 1-5"
+                                                                       },
+                                                                       {
+                                                                           "field":  "cronExpression",
+                                                                           "expression":  "0 5 16 * * 1-5"
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       -920,
+                                       0
+                                   ],
+                      "id":  "8d267ed2-f58a-4fd0-8d4d-5f23eea90567",
+                      "name":  "Health Schedule",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "resource":  "databasePage",
+                                         "operation":  "getAll",
+                                         "databaseId":  {
+                                                            "__rl":  true,
+                                                            "value":  "205cb995-8309-80e4-ac2a-c8589a1783eb",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "TS Calendar DB",
+                                                            "cachedResultUrl":  "https://www.notion.so/205cb995830980e4ac2ac8589a1783eb"
+                                                        },
+                                         "options":  {
+                                                         "sort":  {
+                                                                      "sortValue":  [
+                                                                                        {
+                                                                                            "key":  "Date|date",
+                                                                                            "direction":  "descending"
+                                                                                        }
+                                                                                    ]
+                                                                  }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.notion",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       -680,
+                                       0
+                                   ],
+                      "id":  "892213b5-4525-4dd7-b8e5-7d36c6d859aa",
+                      "name":  "Vacation Calendar",
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "notionApi":  {
+                                                            "id":  "LrLyYGhPvHMbPfZm",
+                                                            "name":  "tsupport API"
+                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const now = new Date();\nconst pad = (value) =\u003e String(value).padStart(2, \"0\");\nconst weekdayNames = [\"\\uC77C\\uC694\\uC77C\", \"\\uC6D4\\uC694\\uC77C\", \"\\uD654\\uC694\\uC77C\", \"\\uC218\\uC694\\uC77C\", \"\\uBAA9\\uC694\\uC77C\", \"\\uAE08\\uC694\\uC77C\", \"\\uD1A0\\uC694\\uC77C\"];\nconst year = String(now.getFullYear());\nconst month = pad(now.getMonth() + 1);\nconst day = pad(now.getDate());\nconst weekdayIndex = now.getDay();\nconst isWeekend = weekdayIndex === 0 || weekdayIndex === 6;\nreturn [{\n  json: {\n    todayDate: `${year}-${month}-${day}`,\n    todayInt: `${year}${month}${day}`,\n    todayMMDD: `${month}${day}`,\n    WeekdayName: weekdayNames[weekdayIndex],\n    IsWeekend: isWeekend,\n    DefaultIsHoliday: isWeekend,\n    DefaultHolidayName: isWeekend ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -680,
+                                       -160
+                                   ],
+                      "id":  "78a09190-f145-4ee4-aa98-98749cb4ff0f",
+                      "name":  "Weekday Baseline",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "=DECLARE @d DATE = CAST(\u0027{{ $(\u0027Weekday Baseline\u0027).item.json.todayDate }}\u0027 AS date);\nSELECT\n    CONVERT(VARCHAR(8), @d, 112) AS check_date,\n    CAST(CASE WHEN EXISTS (\n        SELECT 1\n        FROM TsMgmt.dbo.HolidayCalendarKR\n        WHERE HolidayDate = @d\n    ) THEN 1 ELSE 0 END AS bit) AS found_in_db,\n    ISNULL((SELECT TOP 1 HolidayName FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS holiday_name,\n    ISNULL((SELECT TOP 1 SourceType FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS source_type,\n    ISNULL((SELECT TOP 1 SourceYear FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), 0) AS source_year;"
+                                     },
+                      "type":  "n8n-nodes-base.microsoftSql",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       -420,
+                                       -160
+                                   ],
+                      "id":  "e0e11648-202a-432f-a279-15e7af9c69dc",
+                      "name":  "Holiday DB Fallback",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "microsoftSql":  {
+                                                               "id":  "2dZb5OQPbTyO3052",
+                                                               "name":  "TsMgmt(DevTest_SQL2022_26)"
+                                                           }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const baseline = $(\u0027Weekday Baseline\u0027).first()?.json ?? {};\nconst dbPayload = $(\u0027Holiday DB Fallback\u0027).first()?.json ?? {};\nconst dbFound = !dbPayload.error \u0026\u0026 [true, 1, \u00271\u0027, \u0027true\u0027].includes(dbPayload.found_in_db);\nlet isHoliday = !!baseline.DefaultIsHoliday;\nlet holidayName = baseline.DefaultHolidayName || (isHoliday ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027);\nlet holidayLookupSource = isHoliday ? \u0027default-weekend\u0027 : \u0027default-weekday\u0027;\nif (dbFound) {\n  isHoliday = true;\n  holidayName = String(dbPayload.holiday_name || \u0027\\uACF5\\uD734\\uC77C\u0027);\n  holidayLookupSource = dbPayload.source_type ? `db:${dbPayload.source_type}` : \u0027db\u0027;\n}\nreturn [{\n  json: {\n    today_date: baseline.todayDate || \"\",\n    is_holiday: isHoliday,\n    holiday_name: holidayName,\n    holiday_lookup_source: holidayLookupSource,\n    is_weekend: !!baseline.IsWeekend,\n    db_error: dbPayload.error || \u0027\u0027,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -160,
+                                       -160
+                                   ],
+                      "id":  "801f6f08-a46d-4a99-a77b-c1d0ee601875",
+                      "name":  "Determine Holiday",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "GET",
+                                         "url":  "http://192.168.1.85:5678/api/v1/workflows?limit=250",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "accept",
+                                                                                         "value":  "application/json"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "accept-encoding",
+                                                                                         "value":  "identity"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "ngrok-skip-browser-warning",
+                                                                                         "value":  "true"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "X-N8N-API-KEY",
+                                                                                         "value":  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmMjZjYmI1Yi05ZGUyLTQ1MWItOGFiZi05OWFlNmZkMzU5NzUiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzc3MzI4MzE5fQ.1yTZx62abY8IJmBceQ2jr0lyQfoN5CXTBYUCKb7Il6o"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       -680,
+                                       220
+                                   ],
+                      "id":  "5d5332d2-9d9f-4958-b96f-9c8afcfb8696",
+                      "name":  "Fetch Active Workflows",
+                      "onError":  "continueRegularOutput",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForAllItems",
+                                         "jsCode":  "const baseUrl = \"http://192.168.1.85:5678\";\nconst displayBaseUrl = \"https://n8n.vmsmozart-test.com:8443\";\nconst payload = $input.first()?.json ?? {};\nconst list = Array.isArray(payload.data) ? payload.data : [];\nconst fallbackUrl = baseUrl + \u0027/api/v1/workflows?limit=1\u0027;\nconst workflowBaseUrl = displayBaseUrl + \u0027/workflow/\u0027;\nfunction compactText(value, max = 220) {\n  const text = String(value ?? \u0027\u0027).replace(/\\s+/g, \u0027 \u0027).trim();\n  return text.length \u003e max ? text.slice(0, max - 3) + \u0027...\u0027 : text;\n}\nfunction extractErrorText(obj) {\n  return compactText(obj?.error?.message || obj?.error || obj?.message || \u0027Unknown workflow list error.\u0027);\n}\nif (!Array.isArray(payload.data)) {\n  return [{ json: { workflowFetchError: extractErrorText(payload), workflowId: \u0027\u0027, workflowName: \u0027\u0027, executionUrl: fallbackUrl, fallbackUrl, workflowLink: \u0027\u0027, hasScheduleTrigger: false } }];\n}\nconst active = list\n  .filter((wf) =\u003e wf \u0026\u0026 wf.active \u0026\u0026 !wf.isArchived \u0026\u0026 wf.name !== \u0027Check-Active-Workflow\u0027)\n  .sort((a, b) =\u003e String(a.name || \u0027\u0027).localeCompare(String(b.name || \u0027\u0027)));\nif (active.length === 0) {\n  return [{ json: { workflowNote: \u0027No active workflows found.\u0027, workflowId: \u0027\u0027, workflowName: \u0027\\uC810\\uAC80 \\uB300\\uC0C1 \\uC5C6\\uC74C\u0027, executionUrl: fallbackUrl, fallbackUrl, workflowLink: \u0027\u0027, hasScheduleTrigger: false } }];\n}\nreturn active.map((wf) =\u003e {\n  const nodes = Array.isArray(wf.nodes) ? wf.nodes : [];\n  const hasScheduleTrigger = nodes.some((node) =\u003e node?.type === \u0027n8n-nodes-base.scheduleTrigger\u0027);\n  return {\n    json: {\n      workflowId: String(wf.id || \u0027\u0027),\n      workflowName: String(wf.name || \u0027\u0027),\n      workflowLink: workflowBaseUrl + String(wf.id || \u0027\u0027),\n      hasScheduleTrigger,\n      executionUrl: baseUrl + \u0027/api/v1/executions?workflowId=\u0027 + encodeURIComponent(String(wf.id || \u0027\u0027)) + \u0027\u0026limit=5\u0026includeData=true\u0027,\n      fallbackUrl,\n    },\n  };\n});"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -420,
+                                       220
+                                   ],
+                      "id":  "bc9f130a-6d34-4dfb-b07a-8e1f16ef5b12",
+                      "name":  "Expand Active Workflows",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "GET",
+                                         "url":  "={{ $json.workflowId ? $json.executionUrl : $json.fallbackUrl }}",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "accept",
+                                                                                         "value":  "application/json"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "accept-encoding",
+                                                                                         "value":  "identity"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "ngrok-skip-browser-warning",
+                                                                                         "value":  "true"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "X-N8N-API-KEY",
+                                                                                         "value":  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmMjZjYmI1Yi05ZGUyLTQ1MWItOGFiZi05OWFlNmZkMzU5NzUiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzc3MzI4MzE5fQ.1yTZx62abY8IJmBceQ2jr0lyQfoN5CXTBYUCKb7Il6o"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       -160,
+                                       220
+                                   ],
+                      "id":  "6d5806e6-e3b8-411c-9f1f-8a56b183851a",
+                      "name":  "Fetch Latest Executions",
+                      "onError":  "continueRegularOutput",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "GET",
+                                         "url":  "http://192.168.1.85:5678/api/v1/executions?limit=250\u0026status=running",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "accept",
+                                                                                         "value":  "application/json"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "accept-encoding",
+                                                                                         "value":  "identity"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "ngrok-skip-browser-warning",
+                                                                                         "value":  "true"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "X-N8N-API-KEY",
+                                                                                         "value":  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmMjZjYmI1Yi05ZGUyLTQ1MWItOGFiZi05OWFlNmZkMzU5NzUiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzc3MzI4MzE5fQ.1yTZx62abY8IJmBceQ2jr0lyQfoN5CXTBYUCKb7Il6o"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       -160,
+                                       60
+                                   ],
+                      "id":  "eac04317-4d31-4540-b9fd-e1676a3681bd",
+                      "name":  "Fetch Running Executions",
+                      "onError":  "continueRegularOutput",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForAllItems",
+                                         "jsCode":  "const sourceItems = $(\u0027Expand Active Workflows\u0027).all().map((item) =\u003e item.json ?? {});\nconst payloadItems = $(\u0027Fetch Latest Executions\u0027).all().map((item) =\u003e item.json ?? {});\nconst runningPayload = $(\u0027Fetch Running Executions\u0027).first()?.json ?? {};\nconst runningExecs = Array.isArray(runningPayload.data) ? runningPayload.data : [];\nconst K = {\n  none: \u0027\\uC5C6\\uC74C\u0027,\n  scheduleType: \u0027\\uC2A4\\uCF00\\uC904\u0027,\n  eventType: \u0027\\uC774\\uBCA4\\uD2B8\u0027,\n  unknown: \u0027\\uD655\\uC778 \\uBD88\\uAC00\u0027,\n  healthyReason: \u0027\\uCD5C\\uADFC \\uC2E4\\uD589\\uC774 \\uC815\\uC0C1\\uC785\\uB2C8\\uB2E4.\u0027,\n  runningReason: \u0027\\uD604\\uC7AC \\uC2E4\\uD589 \\uC911\\uC785\\uB2C8\\uB2E4.\u0027,\n  noExecEvent: \u0027\\uC774\\uBCA4\\uD2B8 \\uAE30\\uBC18 \\uC6CC\\uD06C\\uD50C\\uB85C\\uC6B0\\uB85C \\uCD5C\\uADFC \\uC2E4\\uD589 \\uC774\\uB825\\uC774 \\uC5C6\\uC2B5\\uB2C8\\uB2E4.\u0027,\n  noExecSchedule: \u0027\\uC2A4\\uCF00\\uC904 \\uC6CC\\uD06C\\uD50C\\uB85C\\uC6B0\\uC778\\uB370 \\uCD5C\\uADFC \\uC2E4\\uD589 \\uC774\\uB825\\uC774 \\uC5C6\\uC2B5\\uB2C8\\uB2E4.\u0027,\n  oldExecSchedule: \u0027\\uCD5C\\uADFC 72\\uC2DC\\uAC04 \\uB0B4 \\uC2E4\\uD589 \\uC774\\uB825\\uC774 \\uC5C6\\uC2B5\\uB2C8\\uB2E4.\u0027,\n  errorExec: \u0027\\uB9C8\\uC9C0\\uB9C9 \\uC2E4\\uD589\\uC774 error \\uC0C1\\uD0DC\\uC785\\uB2C8\\uB2E4.\u0027,\n  executionFetchError: \u0027\\uC2E4\\uD589 \\uC774\\uB825 \\uC870\\uD68C \\uC2E4\\uD328\u0027,\n  workflowFetchError: \u0027\\uC6CC\\uD06C\\uD50C\\uB85C\\uC6B0 \\uBAA9\\uB85D \\uC870\\uD68C \\uC2E4\\uD328\u0027,\n  statusNormal: \u0027\\uC815\\uC0C1\u0027,\n  statusIssue: \u0027\\uC774\\uC0C1\u0027,\n  statusNote: \u0027\\uCC38\\uACE0\u0027,\n};\nfunction compactText(value, max = 220) {\n  const text = String(value ?? \u0027\u0027).replace(/\\s+/g, \u0027 \u0027).trim();\n  return text.length \u003e max ? text.slice(0, max - 3) + \u0027...\u0027 : text;\n}\nfunction toLocalDateTimeString(isoString) {\n  if (!isoString) return K.none;\n  const date = new Date(isoString);\n  if (Number.isNaN(date.getTime())) return String(isoString ?? K.none);\n  const pad = (value) =\u003e String(value).padStart(2, \u00270\u0027);\n  return date.getFullYear() + \u0027-\u0027 + pad(date.getMonth() + 1) + \u0027-\u0027 + pad(date.getDate()) + \u0027 \u0027 + pad(date.getHours()) + \u0027:\u0027 + pad(date.getMinutes()) + \u0027:\u0027 + pad(date.getSeconds()) + \u0027 KST\u0027;\n}\nfunction extractErrorText(obj) {\n  return compactText(obj?.error?.message || obj?.error || obj?.message || obj?.description || \u0027Unknown execution error.\u0027);\n}\nfunction extractErrorDetail(exec) {\n  const err = exec?.data?.resultData?.error;\n  if (!err) return \u0027\u0027;\n  const nodeName = err.node?.name || err.context?.nodeName || \u0027\u0027;\n  const parts = [err.description, Array.isArray(err.messages) ? err.messages[0] : \u0027\u0027, err.message].filter(Boolean);\n  const text = compactText(parts.join(\u0027 / \u0027));\n  return nodeName ? \u0027[\u0027 + nodeName + \u0027] \u0027 + text : text;\n}\nconst statuses = sourceItems.map((source, index) =\u003e {\n  const payload = payloadItems[index] ?? {};\n  if (source.workflowFetchError) {\n    return { json: { name: K.workflowFetchError, id: \u0027\u0027, link: \u0027\u0027, typeText: K.unknown, lastStatus: K.unknown, lastRunText: K.none, stateLabel: K.statusIssue, reason: compactText(source.workflowFetchError), errorDetail: K.none } };\n  }\n  if (source.workflowNote) {\n    return { json: { name: source.workflowName || \u0027\\uC810\\uAC80 \\uB300\\uC0C1 \\uC5C6\\uC74C\u0027, id: \u0027\u0027, link: \u0027\u0027, typeText: K.unknown, lastStatus: K.none, lastRunText: K.none, stateLabel: K.statusNote, reason: compactText(source.workflowNote), errorDetail: K.none } };\n  }\n  const typeText = source.hasScheduleTrigger ? K.scheduleType : K.eventType;\n  if (!Array.isArray(payload.data)) {\n    return { json: { name: source.workflowName || K.unknown, id: source.workflowId || \u0027\u0027, link: source.workflowLink || \u0027\u0027, typeText, lastStatus: K.unknown, lastRunText: K.none, stateLabel: K.statusIssue, reason: K.executionFetchError, errorDetail: extractErrorText(payload) } };\n  }\n  const runningExec = runningExecs.find((row) =\u003e String(row?.workflowId || \u0027\u0027) === String(source.workflowId || \u0027\u0027)) || null;\n  const execs = [...payload.data].sort((a, b) =\u003e new Date(b.startedAt || 0) - new Date(a.startedAt || 0));\n  const refExec = source.hasScheduleTrigger ? (execs.find((row) =\u003e row.mode !== \u0027manual\u0027) || execs[0] || null) : (execs[0] || null);\n  const base = { name: source.workflowName || K.unknown, id: source.workflowId || \u0027\u0027, link: source.workflowLink || \u0027\u0027, typeText, lastStatus: refExec?.status || K.none, lastRunText: refExec?.startedAt ? toLocalDateTimeString(refExec.startedAt) : K.none, errorDetail: extractErrorDetail(refExec) || K.none };\n  if (runningExec) {\n    return { json: { ...base, lastStatus: \u0027running\u0027, lastRunText: runningExec?.startedAt ? toLocalDateTimeString(runningExec.startedAt) : base.lastRunText, stateLabel: K.statusNote, reason: K.runningReason, errorDetail: K.none } };\n  }\n  if (refExec \u0026\u0026 refExec.status === \u0027error\u0027) {\n    return { json: { ...base, stateLabel: K.statusIssue, reason: K.errorExec } };\n  }\n  if (source.hasScheduleTrigger) {\n    if (!refExec) return { json: { ...base, stateLabel: K.statusIssue, reason: K.noExecSchedule } };\n    const ageHours = (Date.now() - new Date(refExec.startedAt).getTime()) / 3600000;\n    if (!Number.isFinite(ageHours) || ageHours \u003e 72) return { json: { ...base, stateLabel: K.statusIssue, reason: K.oldExecSchedule } };\n    return { json: { ...base, stateLabel: K.statusNormal, reason: K.healthyReason } };\n  }\n  if (!refExec) {\n    return { json: { ...base, stateLabel: K.statusNote, reason: K.noExecEvent } };\n  }\n  return { json: { ...base, stateLabel: K.statusNormal, reason: K.healthyReason } };\n});\nreturn statuses;"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       100,
+                                       220
+                                   ],
+                      "id":  "d1039f9a-cde2-4490-a838-6c1d85020fdd",
+                      "name":  "Normalize Workflow Status",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForAllItems",
+                                         "jsCode":  "const holiday = $(\u0027Determine Holiday\u0027).first()?.json ?? {};\nconst workflowStatuses = $input.all().map((item) =\u003e item.json).filter(Boolean).sort((a, b) =\u003e String(a.name || \u0027\u0027).localeCompare(String(b.name || \u0027\u0027)));\nconst vacationItems = $(\u0027Vacation Calendar\u0027).all();\nconst people = [\n  { name: \u0027\\uAE40\\uC9C4\\uC6B1\u0027, email: \u0027jwkim@vms-solutions.com\u0027 },\n  { name: \u0027\\uAE40\\uBBFC\\uC601\u0027, email: \u0027mykim@vms-solutions.com\u0027 },\n  { name: \u0027\\uC870\\uD604\\uC7AC\u0027, email: \u0027jyi30@vms-solutions.com\u0027 },\n];\nconst K = {\n  none: \u0027\\uC5C6\\uC74C\u0027,\n  normalTitle: \u0027Active \\uC6CC\\uD06C\\uD50C\\uB85C\\uC6B0 \\uC0C1\\uD0DC \\uC810\\uAC80 \\uACB0\\uACFC \\uC815\\uC0C1\\uC785\\uB2C8\\uB2E4.\u0027,\n  warnTitle: \u0027\\uD655\\uC778\\uC774 \\uD544\\uC694\\uD55C Active \\uC6CC\\uD06C\\uD50C\\uB85C\\uC6B0\\uAC00 \\uC788\\uC2B5\\uB2C8\\uB2E4.\u0027,\n  checkedCount: \u0027\\uC810\\uAC80 \\uB300\\uC0C1\u0027,\n  normalCount: \u0027\\uC815\\uC0C1\u0027,\n  issueCount: \u0027\\uC2E4\\uD328/\\uC624\\uB958\u0027,\n  noteCount: \u0027\\uCC38\\uACE0\u0027,\n  vacationUsers: \u0027\\uD734\\uAC00\\uC790\u0027,\n  alertTargets: \u0027\\uC54C\\uB9BC \\uB300\\uC0C1\u0027,\n  checkedAt: \u0027\\uC810\\uAC80 \\uC2DC\\uAC01\u0027,\n  lastStatus: \u0027\\uB9C8\\uC9C0\\uB9C9 \\uC0C1\\uD0DC\u0027,\n  lastRun: \u0027\\uB9C8\\uC9C0\\uB9C9 \\uC2E4\\uD589\u0027,\n  triggerType: \u0027\\uC720\\uD615\u0027,\n  reason: \u0027\\uD310\\uC815 \\uC0AC\\uC720\u0027,\n  errorDetail: \u0027\\uC624\\uB958 \\uB0B4\\uC6A9\u0027,\n  workflowStatus: \u0027\\uC6CC\\uD06C\\uD50C\\uB85C\\uC6B0\\uBCC4 \\uC0C1\\uD0DC\u0027,\n  healthySummary: \u0027\\uC815\\uC0C1 \\uC694\\uC57D\u0027,\n  issueSummary: \u0027\\uC2E4\\uD328/\\uC624\\uB958 \\uC694\\uC57D\u0027,\n  noteSummary: \u0027\\uCC38\\uACE0 \\uC694\\uC57D\u0027,\n  statusNormal: \u0027\\uC815\\uC0C1\u0027,\n  statusIssue: \u0027\\uC774\\uC0C1\u0027,\n  statusNote: \u0027\\uCC38\\uACE0\u0027,\n};\nfunction normalize(value) { return String(value ?? \u0027\u0027).normalize(\u0027NFC\u0027).replace(/\\s+/g, \u0027\u0027).toLowerCase(); }\nfunction contains(value, keyword) { return normalize(value).includes(normalize(keyword)); }\nfunction collectStrings(value, out = [], depth = 0) {\n  if (depth \u003e 10 || value == null) return out;\n  if (typeof value === \u0027string\u0027 || typeof value === \u0027number\u0027 || typeof value === \u0027boolean\u0027) { out.push(String(value)); return out; }\n  if (Array.isArray(value)) { for (const item of value) collectStrings(item, out, depth + 1); return out; }\n  if (typeof value === \u0027object\u0027) { for (const nested of Object.values(value)) collectStrings(nested, out, depth + 1); }\n  return out;\n}\nfunction isVacationText(text) { return [\u0027\\uD734\\uAC00\u0027,\u0027\\uC5F0\\uCC28\u0027,\u0027\\uBC18\\uCC28\u0027,\u0027\\uC624\\uC804\\uBC18\\uCC28\u0027,\u0027\\uC624\\uD6C4\\uBC18\\uCC28\u0027,\u0027\\uC548\\uC2DD\\uC6D4\u0027,\u0027\\uACF5\\uAC00\u0027,\u0027\\uACF5\\uD734\\uC77C\u0027,\u0027\\uD734\\uC77C\u0027,\u0027vacation\u0027,\u0027leave\u0027,\u0027pto\u0027,\u0027dayoff\u0027,\u0027off\u0027].some((keyword) =\u003e contains(text, keyword)); }\nfunction ymd(text) { const match = String(text ?? \u0027\u0027).match(/\\d{4}-\\d{2}-\\d{2}/); return match ? match[0] : \u0027\u0027; }\nfunction ymds(text) { return String(text ?? \u0027\u0027).match(/\\d{4}-\\d{2}-\\d{2}/g) || []; }\nfunction ranges(item) {\n  const found = [];\n  const uniq = new Set();\n  function push(label, start, end) {\n    const s = ymd(start);\n    const e = ymd(end || start);\n    if (!s) return;\n    const key = label + \u0027|\u0027 + s + \u0027|\u0027 + e;\n    if (uniq.has(key)) return;\n    uniq.add(key);\n    found.push({ start: s, end: e || s });\n  }\n  function walk(value, label, depth) {\n    if (depth \u003e 8 || value == null) return;\n    if (typeof value === \u0027string\u0027) { const items = ymds(value); if (items.length === 1) push(label, items[0], items[0]); if (items.length \u003e= 2) push(label, items[0], items[1]); return; }\n    if (typeof value === \u0027number\u0027 || typeof value === \u0027boolean\u0027) return;\n    if (Array.isArray(value)) { value.forEach((item, idx) =\u003e walk(item, label + \u0027[\u0027 + idx + \u0027]\u0027, depth + 1)); return; }\n    if (typeof value === \u0027object\u0027) {\n      if (\u0027start\u0027 in value \u0026\u0026 ymd(value.start)) push(label + \u0027.start\u0027, value.start, value.end || value.start);\n      if (\u0027date\u0027 in value \u0026\u0026 value.date \u0026\u0026 typeof value.date === \u0027object\u0027 \u0026\u0026 ymd(value.date.start)) push(label + \u0027.date\u0027, value.date.start, value.date.end || value.date.start);\n      if (\u0027property_date\u0027 in value \u0026\u0026 value.property_date \u0026\u0026 typeof value.property_date === \u0027object\u0027 \u0026\u0026 ymd(value.property_date.start)) push(label + \u0027.property_date\u0027, value.property_date.start, value.property_date.end || value.property_date.start);\n      for (const [key, nested] of Object.entries(value)) walk(nested, label + \u0027.\u0027 + key, depth + 1);\n    }\n  }\n  walk(item?.json ?? item, \u0027root\u0027, 0);\n  return found;\n}\nfunction toLocalDateTimeString(isoString) {\n  if (!isoString) return K.none;\n  const date = new Date(isoString);\n  if (Number.isNaN(date.getTime())) return String(isoString ?? K.none);\n  const pad = (value) =\u003e String(value).padStart(2, \u00270\u0027);\n  return date.getFullYear() + \u0027-\u0027 + pad(date.getMonth() + 1) + \u0027-\u0027 + pad(date.getDate()) + \u0027 \u0027 + pad(date.getHours()) + \u0027:\u0027 + pad(date.getMinutes()) + \u0027:\u0027 + pad(date.getSeconds()) + \u0027 KST\u0027;\n}\nconst today = String(holiday.today_date || $(\u0027Weekday Baseline\u0027).first()?.json?.todayDate || \u0027\u0027);\nconst checkedAtText = toLocalDateTimeString(new Date().toISOString());\nconst isHoliday = !!holiday.is_holiday;\nconst vacationLookupFailed = vacationItems.some((item) =\u003e item?.json?.error);\nconst todayVacationItems = vacationLookupFailed ? [] : vacationItems.filter((item) =\u003e { const text = collectStrings(item?.json ?? item).join(\u0027 \u0027); if (!isVacationText(text)) return false; const itemRanges = ranges(item); return itemRanges.length \u003e 0 \u0026\u0026 itemRanges.some((range) =\u003e range.start \u003c= today \u0026\u0026 today \u003c= range.end); });\nconst vacationUsers = people.filter((person) =\u003e todayVacationItems.some((item) =\u003e { const text = collectStrings(item?.json ?? item).join(\u0027 \u0027); return contains(text, person.name) || contains(text, person.email); }));\nconst vacationSet = new Set(vacationUsers.map((person) =\u003e person.email));\nconst activeUsers = people.filter((person) =\u003e !vacationSet.has(person.email));\nconst workflowStatusesWithVacation = vacationLookupFailed\n  ? [{ name: \u0027\\uD734\\uAC00 \\uC815\\uBCF4 \\uC870\\uD68C \\uC2E4\\uD328\u0027, id: \u0027\u0027, link: \u0027\u0027, typeText: \u0027\\uD655\\uC778 \\uBD88\\uAC00\u0027, lastStatus: \u0027\\uD655\\uC778 \\uBD88\\uAC00\u0027, lastRunText: \u0027\\uC5C6\\uC74C\u0027, stateLabel: K.statusIssue, reason: \u0027\\uD734\\uAC00\\uC790 \\uC81C\\uC678 \\uC5C6\\uC774 \\uC804\\uC6D0 \\uB300\\uC0C1 \\uAE30\\uC900\\uC73C\\uB85C \\uCC98\\uB9AC\\uD588\\uC2B5\\uB2C8\\uB2E4.\u0027, errorDetail: K.none }, ...workflowStatuses]\n  : workflowStatuses;\nconst healthy = workflowStatusesWithVacation.filter((item) =\u003e item.stateLabel === K.statusNormal);\nconst issues = workflowStatusesWithVacation.filter((item) =\u003e item.stateLabel === K.statusIssue);\nconst notes = workflowStatusesWithVacation.filter((item) =\u003e item.stateLabel === K.statusNote);\nconst healthyNames = healthy.filter((item) =\u003e item.id).map((item) =\u003e item.name);\nconst issueNames = issues.filter((item) =\u003e item.id).map((item) =\u003e item.name);\nconst noteNames = notes.filter((item) =\u003e item.id).map((item) =\u003e item.name);\nconst activeWorkflowCount = workflowStatuses.filter((item) =\u003e item.id).length;\nconst hasProblem = issues.length \u003e 0;\nfunction bulletLines(items, formatter, emptyText) {\n  if (!items.length) return emptyText;\n  return items.map((item) =\u003e \u0027* \u0027 + formatter(item)).join(\u0027\\n\u0027);\n}\nconst teamsEntities = hasProblem ? activeUsers.map((person) =\u003e ({ type: \u0027mention\u0027, text: \u0027\u003cat\u003e\u0027 + person.name + \u0027\u003c/at\u003e\u0027, mentioned: { id: person.email, name: person.name } })) : [];\nconst teamsText = hasProblem ? activeUsers.map((person) =\u003e \u0027\u003cat\u003e\u0027 + person.name + \u0027\u003c/at\u003e\u0027).join(\u0027, \u0027) : \u0027\u0027;\nconst titleText = hasProblem ? (teamsText ? \u0027\\u26A0\\uFE0F \u0027 + teamsText + \u0027 \\uB2D8, \u0027 + K.warnTitle : \u0027\\u26A0\\uFE0F \u0027 + K.warnTitle) : \u0027\\u2705 \u0027 + K.normalTitle;\nconst healthyText = K.healthySummary + \u0027: \u0027 + String(healthyNames.length) + \u0027\\uAC74\\n\u0027 + bulletLines(healthy.filter((item) =\u003e item.id), (item) =\u003e item.name + \u0027(\u0027 + (item.lastRunText || K.none) + \u0027)\u0027, \u0027* \u0027 + K.none);\nconst issueText = K.issueSummary + \u0027: \u0027 + String(issueNames.length) + \u0027\\uAC74\\n\u0027 + bulletLines(issues.filter((item) =\u003e item.id), (item) =\u003e \u0027[\u0027 + item.name + \u0027](\u0027 + item.link + \u0027): \u0027 + (item.errorDetail \u0026\u0026 item.errorDetail !== K.none ? item.errorDetail : item.reason || K.none), \u0027* \u0027 + K.none);\nconst noteText = K.noteSummary + \u0027: \u0027 + String(noteNames.length) + \u0027\\uAC74\\n\u0027 + bulletLines(notes.filter((item) =\u003e item.id), (item) =\u003e item.name + \u0027: \u0027 + (item.reason || K.none), \u0027* \u0027 + K.none);\nconst cardBody = [\n  { type: \u0027TextBlock\u0027, text: titleText, weight: \u0027Bolder\u0027, size: \u0027Medium\u0027, wrap: true },\n  { type: \u0027FactSet\u0027, facts: [\n    { title: K.checkedCount, value: String(activeWorkflowCount) + \u0027\\uAC74\u0027 },\n    { title: K.normalCount, value: String(healthyNames.length) + \u0027\\uAC74\u0027 },\n    { title: K.issueCount, value: String(issueNames.length) + \u0027\\uAC74\u0027 },\n    { title: K.noteCount, value: String(noteNames.length) + \u0027\\uAC74\u0027 },\n    { title: K.vacationUsers, value: vacationUsers.length \u003e 0 ? vacationUsers.map((person) =\u003e person.name).join(\u0027, \u0027) : K.none },\n    { title: K.alertTargets, value: hasProblem ? (activeUsers.length \u003e 0 ? activeUsers.map((person) =\u003e person.name).join(\u0027, \u0027) : K.none) : K.none },\n    { title: K.checkedAt, value: checkedAtText },\n  ] },\n  { type: \u0027TextBlock\u0027, text: healthyText, wrap: true, spacing: \u0027Medium\u0027 },\n  { type: \u0027TextBlock\u0027, text: issueText, wrap: true, spacing: \u0027Small\u0027, color: hasProblem ? \u0027Attention\u0027 : \u0027Default\u0027 },\n  { type: \u0027TextBlock\u0027, text: noteText, wrap: true, spacing: \u0027Small\u0027, isSubtle: true },\n];\nreturn [{ json: { issueCount: issueNames.length, teamsEntities, cardBody, skipSend: isHoliday, debug: { isHoliday, holidayName: holiday.holiday_name || \u0027\u0027, holidayLookupSource: holiday.holiday_lookup_source || \u0027\u0027, holidayDbError: holiday.db_error || \u0027\u0027 } } }];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       360,
+                                       220
+                                   ],
+                      "id":  "7cfe4c5f-5638-49d6-b3ce-3ce7cbbd0178",
+                      "name":  "Build Monitor Payload",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  2
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "00f6ecc7-5dad-4f29-81ab-a5d305485d24",
+                                                                                   "leftValue":  "={{ $json.skipSend !== true }}",
+                                                                                   "rightValue":  true,
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "equals"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       620,
+                                       220
+                                   ],
+                      "id":  "5f8a756b-df4c-48dd-a5d7-5702104380c3",
+                      "name":  "Should Send Monitor",
+                      "alwaysOutputData":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://redacted.invalid/powerautomate/webhook",
+                                         "sendBody":  true,
+                                         "contentType":  "json",
+                                         "specifyBody":  "json",
+                                         "bodyParameters":  {
+                                                                "parameters":  [
+                                                                                   {
+
+                                                                                   }
+                                                                               ]
+                                                            },
+                                         "jsonBody":  "={{ ({ type: \u0027message\u0027, attachments: [{ contentType: \u0027application/vnd.microsoft.card.adaptive\u0027, content: { type: \u0027AdaptiveCard\u0027, body: Array.isArray($json.cardBody) ? $json.cardBody : [], msteams: { entities: Array.isArray($json.teamsEntities) ? $json.teamsEntities : [] }, \u0027$schema\u0027: \u0027http://adaptivecards.io/schemas/adaptive-card.json\u0027, version: \u00271.4\u0027 } }] }) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       880,
+                                       220
+                                   ],
+                      "id":  "0d0dd0d4-aa5d-4f78-8cd0-b2db06efbc6d",
+                      "name":  "Monitor Teams Webhook",
+                      "alwaysOutputData":  false
+                  }
+              ],
+    "connections":  {
+                        "Health Schedule":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Vacation Calendar",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 },
+                                                                 {
+                                                                     "node":  "Weekday Baseline",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 },
+                                                                 {
+                                                                     "node":  "Fetch Active Workflows",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Weekday Baseline":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "Holiday DB Fallback",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "Holiday DB Fallback":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Determine Holiday",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Fetch Active Workflows":  {
+                                                       "main":  [
+                                                                    [
+                                                                        {
+                                                                            "node":  "Expand Active Workflows",
+                                                                            "type":  "main",
+                                                                            "index":  0
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                   },
+                        "Expand Active Workflows":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Fetch Latest Executions",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         },
+                                                                         {
+                                                                             "node":  "Fetch Running Executions",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Fetch Latest Executions":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Normalize Workflow Status",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Fetch Running Executions":  {
+                                                         "main":  [
+                                                                      [
+                                                                          {
+                                                                              "node":  "Normalize Workflow Status",
+                                                                              "type":  "main",
+                                                                              "index":  1
+                                                                          }
+                                                                      ]
+                                                                  ]
+                                                     },
+                        "Normalize Workflow Status":  {
+                                                          "main":  [
+                                                                       [
+                                                                           {
+                                                                               "node":  "Build Monitor Payload",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           }
+                                                                       ]
+                                                                   ]
+                                                      },
+                        "Build Monitor Payload":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "Should Send Monitor",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  },
+                        "Should Send Monitor":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Monitor Teams Webhook",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "callerPolicy":  "workflowsFromSameOwner",
+                     "availableInMCP":  false
+                 }
+}

@@ -1,0 +1,120 @@
+{
+  "name": "Check_My_Schedule",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c4ddbb8d-eed4-4ca3-9766-25c697094f36",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst dateKst = new Intl.DateTimeFormat('sv-SE', {\n  timeZone: 'Asia/Seoul'\n}).format(now);\n\nconst targetUsers = [\n  {\n    name: '김진욱',\n    email: 'jwkim@vms-solutions.com'\n  }\n];\n\nreturn [\n  {\n    json: {\n      dateKst,\n      targetUsers,\n      requestBody: {\n        Schedules: targetUsers.map((user) => user.email),\n        StartTime: {\n          dateTime: `${dateKst}T00:00:00`,\n          timeZone: 'Asia/Seoul'\n        },\n        EndTime: {\n          dateTime: `${dateKst}T23:59:59`,\n          timeZone: 'Asia/Seoul'\n        },\n        availabilityViewInterval: 30\n      }\n    }\n  }\n];"
+      },
+      "id": "78ca29f1-328d-4ed9-b41d-c45c7bcf9a6b",
+      "name": "Build Schedule Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.microsoft.com/v1.0/me/calendar/getSchedule",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOutlookOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "outlook.timezone=\"Asia/Seoul\""
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "48f0d37b-e661-4144-af8f-10c4a413e0ff",
+      "name": "Get Schedule",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -128,
+        0
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "QrARH25rhyVoJNXv",
+          "name": "tsupport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('Build Schedule Request').first().json;\nconst targetUsers = Array.isArray(source.targetUsers) ? source.targetUsers : [];\nconst targetMap = new Map(\n  targetUsers.map((user) => [user.email.toLowerCase(), user])\n);\n\nconst schedules = Array.isArray($json.value) ? $json.value : [];\n\nif (schedules.length === 0) {\n  return [\n    {\n      json: {\n        date: source.dateKst,\n        targetCount: targetUsers.length,\n        hasSchedule: false,\n        note: 'No schedule data returned.'\n      }\n    }\n  ];\n}\n\nreturn schedules.map((entry) => {\n  const email = (entry.scheduleId ?? '').toString();\n  const user = targetMap.get(email.toLowerCase()) ?? {\n    name: email,\n    email\n  };\n  const scheduleItems = Array.isArray(entry.scheduleItems) ? entry.scheduleItems : [];\n  const hasSchedule = scheduleItems.length > 0 || /[1-3]/.test(entry.availabilityView ?? '');\n\n  return {\n    json: {\n      date: source.dateKst,\n      name: user.name,\n      email: user.email,\n      hasSchedule,\n      busyCount: scheduleItems.length,\n      availabilityView: entry.availabilityView ?? '',\n      timeRanges: scheduleItems.map((item) => ({\n        start: item.start?.dateTime ?? '',\n        end: item.end?.dateTime ?? '',\n        status: item.status ?? ''\n      }))\n    }\n  };\n});"
+      },
+      "id": "51cf8a87-c1b9-433d-b11c-0e72a33704d5",
+      "name": "Summarize Daily Schedule",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        0
+      ],
+      "alwaysOutputData": true
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Schedule Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Schedule Request": {
+      "main": [
+        [
+          {
+            "node": "Get Schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Schedule": {
+      "main": [
+        [
+          {
+            "node": "Summarize Daily Schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

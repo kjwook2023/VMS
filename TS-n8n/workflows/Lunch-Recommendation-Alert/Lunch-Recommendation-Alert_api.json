@@ -1,0 +1,934 @@
+{
+    "name":  "Lunch-Recommendation-Alert",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "field":  "cronExpression",
+                                                                           "expression":  "0 30 11 * * 1-5"
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       -1760,
+                                       -160
+                                   ],
+                      "id":  "51c0a807-51c0-51c0-51c0-51c0a80b51c0a80c",
+                      "name":  "Lunch Recommendation Schedule",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "GET",
+                                         "path":  "lunch-menu-recommend-more",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       -1760,
+                                       16
+                                   ],
+                      "id":  "156eb5ef-156e-156e-156e-156eb5f3156eb5f4",
+                      "name":  "More Recommendation Webhook",
+                      "webhookId":  "1e86115b-1e86-1e86-1e86-1e86115f1e861160"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const source = $input.first()?.json ?? {};\nconst query = source.query \u0026\u0026 typeof source.query === \u0027object\u0027 ? source.query : {};\nconst now = new Date();\nconst parts = new Intl.DateTimeFormat(\u0027en-CA\u0027, {\n  timeZone: \u0027Asia/Seoul\u0027,\n  year: \u0027numeric\u0027,\n  month: \u00272-digit\u0027,\n  day: \u00272-digit\u0027,\n  weekday: \u0027long\u0027,\n}).formatToParts(now);\nconst pick = (type) =\u003e parts.find((part) =\u003e part.type === type)?.value || \u0027\u0027;\nconst year = pick(\u0027year\u0027);\nconst month = pick(\u0027month\u0027);\nconst day = pick(\u0027day\u0027);\nconst weekdayEn = pick(\u0027weekday\u0027);\nconst weekdayMap = {\n  Monday: \u0027\\uC6D4\\uC694\\uC77C\u0027,\n  Tuesday: \u0027\\uD654\\uC694\\uC77C\u0027,\n  Wednesday: \u0027\\uC218\\uC694\\uC77C\u0027,\n  Thursday: \u0027\\uBAA9\\uC694\\uC77C\u0027,\n  Friday: \u0027\\uAE08\\uC694\\uC77C\u0027,\n  Saturday: \u0027\\uD1A0\\uC694\\uC77C\u0027,\n  Sunday: \u0027\\uC77C\\uC694\\uC77C\u0027,\n};\nconst isWeekend = weekdayEn === \u0027Saturday\u0027 || weekdayEn === \u0027Sunday\u0027;\nconst nextWeek = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));\nconst isLastWeekOfMonth = now.getMonth() !== nextWeek.getMonth();\nconst interviewBudgetPerPersonKrw = 30000;\nconst interviewParticipantCount = 4;\nconst excludeRaw = String(query.exclude || source.exclude || \u0027\u0027).trim();\nconst excludedPlaceNames = excludeRaw ? excludeRaw.split(\u0027|\u0027).map((value) =\u003e String(value || \u0027\u0027).trim()).filter(Boolean) : [];\nconst requestSource = excludedPlaceNames.length \u003e 0 || String(query.source || source.source || \u0027\u0027).toLowerCase() === \u0027teams\u0027 ? \u0027teams-reroll\u0027 : \u0027scheduled\u0027;\nreturn [{\n  json: {\n    ...source,\n    query,\n    todayDate: `${year}-${month}-${day}`,\n    todayInt: `${year}${month}${day}`,\n    todayMMDD: `${month}${day}`,\n    WeekdayName: weekdayMap[weekdayEn] || weekdayEn,\n    IsWeekend: isWeekend,\n    DefaultIsHoliday: isWeekend,\n    DefaultHolidayName: isWeekend ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027,\n    locationLabel: \"\\ubd84\\ub2f9\\uc218\\uc9c0\\uc720\\ud0c0\\uc6cc\",\n    locationQuery: \"\\uacbd\\uae30\\ub3c4 \\uc6a9\\uc778\\uc2dc \\uc218\\uc9c0\\uad6c \\uc2e0\\uc218\\ub85c 767\",\n    nearbySearchQuery: \"\\ubd84\\ub2f9\\uc218\\uc9c0\\uc720\\ud0c0\\uc6cc \\ub9db\\uc9d1\",\n    budgetPerPersonKrw: 10000,\n    isLastWeekOfMonth,\n    interviewBudgetPerPersonKrw,\n    interviewParticipantCount,\n    interviewBudgetTotalKrw: interviewBudgetPerPersonKrw * interviewParticipantCount,\n    walkRadiusMeters: 1200,\n    driveRadiusMeters: 6500,\n    driveSearchOffsetMeters: 1800,\n    driveSearchRadiusMeters: 2500,\n    walkCandidateLimit: 14,\n    driveCandidateLimit: 18,\n    requestSource,\n    excludedPlaceNames,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -1504,
+                                       -72
+                                   ],
+                      "id":  "0ffdbdba-0ffd-0ffd-0ffd-0ffdbdbe0ffdbdbf",
+                      "name":  "Weekday Baseline",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "=DECLARE @d DATE = CAST(\u0027{{ $(\u0027Weekday Baseline\u0027).item.json.todayDate }}\u0027 AS date);\nSELECT\n    CONVERT(VARCHAR(8), @d, 112) AS check_date,\n    CAST(CASE WHEN EXISTS (\n        SELECT 1\n        FROM TsMgmt.dbo.HolidayCalendarKR\n        WHERE HolidayDate = @d\n    ) THEN 1 ELSE 0 END AS bit) AS found_in_db,\n    ISNULL((SELECT TOP 1 HolidayName FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS holiday_name,\n    ISNULL((SELECT TOP 1 SourceType FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS source_type,\n    ISNULL((SELECT TOP 1 SourceYear FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), 0) AS source_year;"
+                                     },
+                      "type":  "n8n-nodes-base.microsoftSql",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       -1248,
+                                       -72
+                                   ],
+                      "id":  "35b2fc3d-35b2-35b2-35b2-35b2fc3935b2fc38",
+                      "name":  "Holiday DB Fallback",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "microsoftSql":  {
+                                                               "id":  "2dZb5OQPbTyO3052",
+                                                               "name":  "TsMgmt(DevTest_SQL2022_26)"
+                                                           }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const baseline = $(\u0027Weekday Baseline\u0027).first()?.json ?? {};\nconst dbPayload = $(\u0027Holiday DB Fallback\u0027).first()?.json ?? {};\nconst dbFound = !dbPayload.error \u0026\u0026 [true, 1, \u00271\u0027, \u0027true\u0027].includes(dbPayload.found_in_db);\n\nlet isHoliday = !!baseline.DefaultIsHoliday;\nlet holidayName = baseline.DefaultHolidayName || (isHoliday ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027);\nlet holidayLookupSource = isHoliday ? \u0027default-weekend\u0027 : \u0027default-weekday\u0027;\n\nif (dbFound) {\n  isHoliday = true;\n  holidayName = String(dbPayload.holiday_name || \u0027\\uACF5\\uD734\\uC77C\u0027);\n  holidayLookupSource = dbPayload.source_type ? `db:${dbPayload.source_type}` : \u0027db\u0027;\n}\n\nreturn [{\n  json: {\n    ...baseline,\n    check_date: baseline.todayInt,\n    today_date: baseline.todayDate,\n    is_holiday: isHoliday,\n    holiday_name: holidayName,\n    is_weekend: !!baseline.IsWeekend,\n    weekday_name: baseline.WeekdayName,\n    holiday_lookup_source: holidayLookupSource,\n    db_error: dbPayload.error || \u0027\u0027,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -992,
+                                       -72
+                                   ],
+                      "id":  "79db9c50-79db-79db-79db-79db9c5479db9c55",
+                      "name":  "Determine Holiday",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "loose",
+                                                                            "version":  2
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "524bdc5e-524b-524b-524b-524bdc62524bdc63",
+                                                                                   "leftValue":  "={{ $json.is_holiday }}",
+                                                                                   "rightValue":  false,
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "equals"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       -736,
+                                       -72
+                                   ],
+                      "id":  "30ed7390-30ed-30ed-30ed-30ed739430ed7395",
+                      "name":  "Not Holiday",
+                      "alwaysOutputData":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "GET",
+                                         "url":  "https://dapi.kakao.com/v2/local/search/address.json",
+                                         "authentication":  "predefinedCredentialType",
+                                         "nodeCredentialType":  "httpHeaderAuth",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Accept",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "query",
+                                                                                        "value":  "경기도 용인시 수지구 신수로 767"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       -480,
+                                       -72
+                                   ],
+                      "id":  "0d3abf1a-0d3a-0d3a-0d3a-0d3abf160d3abf15",
+                      "name":  "Resolve Recommendation Center",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "vnfOZARBTxbJ1sJU",
+                                                                 "name":  "kakao-local-lunch-recommendation"
+                                                             }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const source = $(\u0027Weekday Baseline\u0027).first()?.json ?? {};\nconst payload = $input.first()?.json ?? {};\nconst docs = Array.isArray(payload.documents) ? payload.documents : [];\nconst first = docs[0] || null;\nconst locationError = first ? \"\" : String(payload.error?.message || payload.message || payload.error || \"Failed to resolve lunch recommendation center.\");\nconst centerX = first ? String(first.x || \"\") : \"\";\nconst centerY = first ? String(first.y || \"\") : \"\";\nconst centerXNumber = Number(centerX || 0);\nconst centerYNumber = Number(centerY || 0);\nconst driveSearchOffsetMeters = Number(source.driveSearchOffsetMeters || 1800);\nconst driveSearchRadiusMeters = Number(source.driveSearchRadiusMeters || 2500);\nconst latOffset = driveSearchOffsetMeters / 111320;\nconst lonOffset = driveSearchOffsetMeters / (111320 * Math.max(0.2, Math.cos((centerYNumber * Math.PI) / 180)));\nconst driveSearchPoints = first ? {\n  east: { x: String(centerXNumber + lonOffset), y: String(centerYNumber), label: \"east\" },\n  west: { x: String(centerXNumber - lonOffset), y: String(centerYNumber), label: \"west\" },\n  north: { x: String(centerXNumber), y: String(centerYNumber + latOffset), label: \"north\" },\n  south: { x: String(centerXNumber), y: String(centerYNumber - latOffset), label: \"south\" },\n} : {};\nconst centerLocationText = first\n  ? String(first.road_address?.address_name || first.address?.address_name || first.address_name || \"\").trim()\n  : \"\";\nreturn [{\n  json: {\n    ...source,\n    centerX,\n    centerY,\n    centerDisplayName: source.locationLabel || \"\",\n    centerAddressQuery: source.locationQuery || \"\",\n    centerLocationText,\n    driveSearchOffsetMeters,\n    driveSearchRadiusMeters,\n    driveSearchPoints,\n    locationResolved: Boolean(first),\n    locationError,\n    nearbySearchLink: \"https://map.kakao.com/link/search/\" + encodeURIComponent(source.nearbySearchQuery || source.locationLabel || \"\"),\n    moreRecommendationsUrlBase: \"https://n8n.vmsmozart-test.com:8443/webhook/lunch-menu-recommend-more\",\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -224,
+                                       -72
+                                   ],
+                      "id":  "46f6417c-46f6-46f6-46f6-46f6417846f64177",
+                      "name":  "Build Search Center",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "GET",
+                                         "url":  "https://api.open-meteo.com/v1/forecast",
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "latitude",
+                                                                                        "value":  "={{ $json.centerY }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "longitude",
+                                                                                        "value":  "={{ $json.centerX }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "timezone",
+                                                                                        "value":  "Asia/Seoul"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "forecast_days",
+                                                                                        "value":  "7"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "current",
+                                                                                        "value":  "temperature_2m,apparent_temperature,weather_code"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "daily",
+                                                                                        "value":  "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       32,
+                                       -72
+                                   ],
+                      "id":  "31dbfe24-31db-31db-31db-31dbfe2831dbfe29",
+                      "name":  "Fetch Weather Forecast",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const source = $(\u0027Build Search Center\u0027).first()?.json ?? {};\nconst payload = $input.first()?.json ?? {};\nconst daily = payload.daily \u0026\u0026 typeof payload.daily === \"object\" ? payload.daily : {};\nconst current = payload.current \u0026\u0026 typeof payload.current === \"object\" ? payload.current : {};\nconst weatherCodeMap = {\n  0: \u0027\\uB9D1\\uC74C\u0027,\n  1: \u0027\\uB300\\uCCB4\\uB85C \\uB9D1\\uC74C\u0027,\n  2: \u0027\\uAD6C\\uB984 \\uC870\\uAE08\u0027,\n  3: \u0027\\uD750\\uB9BC\u0027,\n  45: \u0027\\uC548\\uAC1C\u0027,\n  48: \u0027\\uC9D9\\uC740 \\uC548\\uAC1C\u0027,\n  51: \u0027\\uC57D\\uD55C \\uC774\\uC2AC\\uBE44\u0027,\n  53: \u0027\\uC774\\uC2AC\\uBE44\u0027,\n  55: \u0027\\uAC15\\uD55C \\uC774\\uC2AC\\uBE44\u0027,\n  56: \u0027\\uC57D\\uD55C \\uC5BC\\uC74C \\uC774\\uC2AC\\uBE44\u0027,\n  57: \u0027\\uAC15\\uD55C \\uC5BC\\uC74C \\uC774\\uC2AC\\uBE44\u0027,\n  61: \u0027\\uC57D\\uD55C \\uBE44\u0027,\n  63: \u0027\\uBE44\u0027,\n  65: \u0027\\uAC15\\uD55C \\uBE44\u0027,\n  66: \u0027\\uC5BC\\uC74C \\uBE44\u0027,\n  67: \u0027\\uAC15\\uD55C \\uC5BC\\uC74C \\uBE44\u0027,\n  71: \u0027\\uC57D\\uD55C \\uB208\u0027,\n  73: \u0027\\uB208\u0027,\n  75: \u0027\\uAC15\\uD55C \\uB208\u0027,\n  77: \u0027\\uC9C4\\uB208\\uAE68\\uBE44\u0027,\n  80: \u0027\\uC18C\\uB098\\uAE30\u0027,\n  81: \u0027\\uC18C\\uB098\\uAE30 \\uBE44\u0027,\n  82: \u0027\\uAC15\\uD55C \\uC18C\\uB098\\uAE30\u0027,\n  85: \u0027\\uC18C\\uB098\\uAE30 \\uB208\u0027,\n  86: \u0027\\uAC15\\uD55C \\uC18C\\uB098\\uAE30 \\uB208\u0027,\n  95: \u0027\\uB1CC\\uC6B0\\uB97C \\uB3D9\\uBC18\\uD55C \\uBE44\u0027,\n  96: \u0027\\uC57D\\uD55C \\uC6B0\\uBC15\u0027,\n  99: \u0027\\uAC15\\uD55C \\uC6B0\\uBC15\u0027,\n};\nfunction labelForCode(code) {\n  return weatherCodeMap[Number(code)] || \"Unknown\";\n}\nconst dates = Array.isArray(daily.time) ? daily.time : [];\nconst maxTemps = Array.isArray(daily.temperature_2m_max) ? daily.temperature_2m_max : [];\nconst minTemps = Array.isArray(daily.temperature_2m_min) ? daily.temperature_2m_min : [];\nconst rainProb = Array.isArray(daily.precipitation_probability_max) ? daily.precipitation_probability_max : [];\nconst rainSum = Array.isArray(daily.precipitation_sum) ? daily.precipitation_sum : [];\nconst codes = Array.isArray(daily.weather_code) ? daily.weather_code : [];\nconst dailyForecast = dates.slice(0, 7).map((date, index) =\u003e ({\n  date: String(date || \"\"),\n  weatherCode: Number(codes[index] ?? -1),\n  weatherLabel: labelForCode(codes[index]),\n  temperatureMax: Number(maxTemps[index] ?? NaN),\n  temperatureMin: Number(minTemps[index] ?? NaN),\n  precipitationProbabilityMax: Number(rainProb[index] ?? 0),\n  precipitationSum: Number(rainSum[index] ?? 0),\n}));\nconst today = dailyForecast[0] || null;\nconst hotDays = dailyForecast.filter((day) =\u003e Number.isFinite(day.temperatureMax) \u0026\u0026 day.temperatureMax \u003e= 28).length;\nconst coldDays = dailyForecast.filter((day) =\u003e Number.isFinite(day.temperatureMin) \u0026\u0026 day.temperatureMin \u003c= 5).length;\nconst rainyDays = dailyForecast.filter((day) =\u003e day.precipitationProbabilityMax \u003e= 50 || day.precipitationSum \u003e= 3 || [51,53,55,61,63,65,66,67,80,81,82,95,96,99].includes(day.weatherCode)).length;\nconst currentTemp = Number(current.temperature_2m ?? NaN);\nconst currentFeelsLike = Number(current.apparent_temperature ?? NaN);\nconst currentLabel = labelForCode(current.weather_code);\nconst todaySummaryText = today\n  ? [\n      String(today.weatherLabel || currentLabel || \"\").trim(),\n      Number.isFinite(currentTemp) ? `현재 ${Math.round(currentTemp)}°C` : \"\",\n      Number.isFinite(currentFeelsLike) ? `체감 ${Math.round(currentFeelsLike)}°C` : \"\",\n      Number.isFinite(today.temperatureMax) \u0026\u0026 Number.isFinite(today.temperatureMin) ? `최고 ${Math.round(today.temperatureMax)}°C / 최저 ${Math.round(today.temperatureMin)}°C` : \"\",\n      today.precipitationProbabilityMax \u003e 0 ? `강수확률 ${Math.round(today.precipitationProbabilityMax)}%` : \"\",\n    ].filter(Boolean).join(\" | \")\n  : (Number.isFinite(currentTemp) ? `현재 ${Math.round(currentTemp)}°C` : \"날씨 정보 없음\");\nconst weekBits = [];\nif (rainyDays \u003e 0) weekBits.push(`비 예보 ${rainyDays}일`);\nif (hotDays \u003e 0) weekBits.push(`더운 날 ${hotDays}일`);\nif (coldDays \u003e 0) weekBits.push(`쌀쌀한 날 ${coldDays}일`);\nif (weekBits.length === 0 \u0026\u0026 dailyForecast.length \u003e 0) weekBits.push(\"이번 주는 비교적 무난한 날씨\");\nconst weekSummaryText = weekBits.join(\" | \");\nconst weatherHints = [];\nif (today \u0026\u0026 (today.precipitationProbabilityMax \u003e= 50 || today.precipitationSum \u003e= 3 || [51,53,55,61,63,65,66,67,80,81,82,95,96,99].includes(today.weatherCode))) {\n  weatherHints.push(\"\\uBE44 \\uC624\\uB294 \\uB0A0\\uC740 \\uAD6D\\uBB3C, \\uB530\\uB73B\\uD55C \\uBA54\\uB274, \\uC2E4\\uB0B4 \\uCCB4\\uB958\\uAC00 \\uD3B8\\uD55C \\uACF3\\uC744 \\uC6B0\\uC120\\uD55C\\uB2E4.\");\n}\nif (today \u0026\u0026 Number.isFinite(today.temperatureMax) \u0026\u0026 today.temperatureMax \u003e= 28) {\n  weatherHints.push(\"\\uB354\\uC6B4 \\uB0A0\\uC740 \\uCC28\\uAC11\\uAC70\\uB098 \\uB9E4\\uCF64\\uD558\\uC9C0 \\uC54A\\uC740 \\uBA54\\uB274, \\uC2DC\\uC6D0\\uD55C \\uB9E4\\uC7A5 \\uC704\\uC8FC\\uB85C \\uACE0\\uB978\\uB2E4.\");\n}\nif (today \u0026\u0026 Number.isFinite(today.temperatureMin) \u0026\u0026 today.temperatureMin \u003c= 5) {\n  weatherHints.push(\"\\uC30D\\uC30D\\uD55C \\uB0A0\\uC740 \\uD0D5, \\uC804\\uACE8, \\uBA74\\uB958 \\uAC19\\uC740 \\uB530\\uB73B\\uD55C \\uBA54\\uB274\\uB97C \\uC6B0\\uC120\\uD55C\\uB2E4.\");\n}\nif (rainyDays \u003e= 3) {\n  weatherHints.push(\"\\uC774\\uBC88 \\uC8FC\\uB294 \\uBE44 \\uC608\\uBCF4\\uAC00 \\uC788\\uC5B4 \\uC2E4\\uB0B4\\uC5D0\\uC11C \\uB300\\uAE30\\uD558\\uAE30 \\uD3B8\\uD55C \\uACF3\\uC744 \\uC120\\uD638\\uD55C\\uB2E4.\");\n}\nreturn [{\n  json: {\n    ...source,\n    weatherFetchError: payload.error ? String(payload.error?.message || payload.error || \"\") : \"\",\n    weatherContext: {\n      todaySummaryText,\n      weekSummaryText,\n      weatherHints,\n      dailyForecast,\n      current: {\n        temperatureC: Number.isFinite(currentTemp) ? currentTemp : null,\n        apparentTemperatureC: Number.isFinite(currentFeelsLike) ? currentFeelsLike : null,\n        weatherCode: current.weather_code ?? null,\n        weatherLabel: currentLabel || \"\",\n      },\n    },\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       288,
+                                       -72
+                                   ],
+                      "id":  "1b6eb181-1b6e-1b6e-1b6e-1b6eb17d1b6eb17c",
+                      "name":  "Summarize Weather",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "GET",
+                                         "url":  "https://dapi.kakao.com/v2/local/search/category.json",
+                                         "authentication":  "predefinedCredentialType",
+                                         "nodeCredentialType":  "httpHeaderAuth",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Accept",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "category_group_code",
+                                                                                        "value":  "FD6"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "x",
+                                                                                        "value":  "={{ $(\u0027Summarize Weather\u0027).first().json.centerX }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "y",
+                                                                                        "value":  "={{ $(\u0027Summarize Weather\u0027).first().json.centerY }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "radius",
+                                                                                        "value":  "={{ String($(\u0027Summarize Weather\u0027).first().json.walkRadiusMeters || 1200) }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "sort",
+                                                                                        "value":  "distance"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "size",
+                                                                                        "value":  "15"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       544,
+                                       -168
+                                   ],
+                      "id":  "6cb69a5e-6cb6-6cb6-6cb6-6cb69a626cb69a63",
+                      "name":  "Search Walkable Restaurants",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "vnfOZARBTxbJ1sJU",
+                                                                 "name":  "kakao-local-lunch-recommendation"
+                                                             }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "GET",
+                                         "url":  "https://dapi.kakao.com/v2/local/search/category.json",
+                                         "authentication":  "predefinedCredentialType",
+                                         "nodeCredentialType":  "httpHeaderAuth",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Accept",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "category_group_code",
+                                                                                        "value":  "FD6"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "x",
+                                                                                        "value":  "={{ $(\u0027Summarize Weather\u0027).first().json.driveSearchPoints?.east?.x || $(\u0027Summarize Weather\u0027).first().json.centerX }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "y",
+                                                                                        "value":  "={{ $(\u0027Summarize Weather\u0027).first().json.driveSearchPoints?.east?.y || $(\u0027Summarize Weather\u0027).first().json.centerY }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "radius",
+                                                                                        "value":  "={{ String($(\u0027Summarize Weather\u0027).first().json.driveSearchRadiusMeters || 2500) }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "sort",
+                                                                                        "value":  "distance"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "size",
+                                                                                        "value":  "15"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       544,
+                                       24
+                                   ],
+                      "id":  "57940d3b-5794-5794-5794-57940d3f57940d40",
+                      "name":  "Search Drive Restaurants East",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "vnfOZARBTxbJ1sJU",
+                                                                 "name":  "kakao-local-lunch-recommendation"
+                                                             }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "GET",
+                                         "url":  "https://dapi.kakao.com/v2/local/search/category.json",
+                                         "authentication":  "predefinedCredentialType",
+                                         "nodeCredentialType":  "httpHeaderAuth",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Accept",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "category_group_code",
+                                                                                        "value":  "FD6"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "x",
+                                                                                        "value":  "={{ $(\u0027Summarize Weather\u0027).first().json.driveSearchPoints?.west?.x || $(\u0027Summarize Weather\u0027).first().json.centerX }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "y",
+                                                                                        "value":  "={{ $(\u0027Summarize Weather\u0027).first().json.driveSearchPoints?.west?.y || $(\u0027Summarize Weather\u0027).first().json.centerY }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "radius",
+                                                                                        "value":  "={{ String($(\u0027Summarize Weather\u0027).first().json.driveSearchRadiusMeters || 2500) }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "sort",
+                                                                                        "value":  "distance"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "size",
+                                                                                        "value":  "15"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       544,
+                                       120
+                                   ],
+                      "id":  "3caa1798-3caa-3caa-3caa-3caa17943caa1793",
+                      "name":  "Search Drive Restaurants West",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "vnfOZARBTxbJ1sJU",
+                                                                 "name":  "kakao-local-lunch-recommendation"
+                                                             }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "GET",
+                                         "url":  "https://dapi.kakao.com/v2/local/search/category.json",
+                                         "authentication":  "predefinedCredentialType",
+                                         "nodeCredentialType":  "httpHeaderAuth",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Accept",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "category_group_code",
+                                                                                        "value":  "FD6"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "x",
+                                                                                        "value":  "={{ $(\u0027Summarize Weather\u0027).first().json.driveSearchPoints?.north?.x || $(\u0027Summarize Weather\u0027).first().json.centerX }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "y",
+                                                                                        "value":  "={{ $(\u0027Summarize Weather\u0027).first().json.driveSearchPoints?.north?.y || $(\u0027Summarize Weather\u0027).first().json.centerY }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "radius",
+                                                                                        "value":  "={{ String($(\u0027Summarize Weather\u0027).first().json.driveSearchRadiusMeters || 2500) }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "sort",
+                                                                                        "value":  "distance"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "size",
+                                                                                        "value":  "15"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       544,
+                                       216
+                                   ],
+                      "id":  "3caa1797-3caa-3caa-3caa-3caa17933caa1792",
+                      "name":  "Search Drive Restaurants North",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "vnfOZARBTxbJ1sJU",
+                                                                 "name":  "kakao-local-lunch-recommendation"
+                                                             }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "GET",
+                                         "url":  "https://dapi.kakao.com/v2/local/search/category.json",
+                                         "authentication":  "predefinedCredentialType",
+                                         "nodeCredentialType":  "httpHeaderAuth",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Accept",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "category_group_code",
+                                                                                        "value":  "FD6"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "x",
+                                                                                        "value":  "={{ $(\u0027Summarize Weather\u0027).first().json.driveSearchPoints?.south?.x || $(\u0027Summarize Weather\u0027).first().json.centerX }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "y",
+                                                                                        "value":  "={{ $(\u0027Summarize Weather\u0027).first().json.driveSearchPoints?.south?.y || $(\u0027Summarize Weather\u0027).first().json.centerY }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "radius",
+                                                                                        "value":  "={{ String($(\u0027Summarize Weather\u0027).first().json.driveSearchRadiusMeters || 2500) }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "sort",
+                                                                                        "value":  "distance"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "size",
+                                                                                        "value":  "15"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       544,
+                                       312
+                                   ],
+                      "id":  "5912977b-5912-5912-5912-5912977f59129780",
+                      "name":  "Search Drive Restaurants South",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "vnfOZARBTxbJ1sJU",
+                                                                 "name":  "kakao-local-lunch-recommendation"
+                                                             }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const source = $(\u0027Summarize Weather\u0027).first()?.json ?? {};\nconst walkPayload = $(\u0027Search Walkable Restaurants\u0027).first()?.json ?? {};\nconst drivePayloadEast = $(\u0027Search Drive Restaurants East\u0027).first()?.json ?? {};\nconst drivePayloadWest = $(\u0027Search Drive Restaurants West\u0027).first()?.json ?? {};\nconst drivePayloadNorth = $(\u0027Search Drive Restaurants North\u0027).first()?.json ?? {};\nconst drivePayloadSouth = $(\u0027Search Drive Restaurants South\u0027).first()?.json ?? {};\nconst excludedNames = Array.isArray(source.excludedPlaceNames) ? source.excludedPlaceNames : [];\nfunction normalize(value) {\n  return String(value || \"\").normalize(\"NFC\").replace(/\\s+/g, \"\").toLowerCase();\n}\nconst excludedSet = new Set(excludedNames.map(normalize));\nconst hardExcludeKeywords = [\n  \u0027\\uC220\\uC9D1\u0027,\n  \u0027\\uD638\\uD504\u0027,\n  \u0027\\uC774\\uC790\\uCE74\\uC57C\u0027,\n  \u0027\\uBC14\u0027,\n  \u0027\\uCE74\\uD398\u0027,\n  \u0027\\uB514\\uC800\\uD2B8\u0027,\n  \u0027\\uBCA0\\uC774\\uCEE4\\uB9AC\u0027,\n  \u0027\\uC8FC\\uC810\u0027,\n].map(normalize);\nfunction shouldExcludeText(text) {\n  const target = normalize(text);\n  return hardExcludeKeywords.some((keyword) =\u003e target.includes(keyword));\n}\nconst centerX = Number(source.centerX || 0);\nconst centerY = Number(source.centerY || 0);\nfunction haversineMeters(lat1, lon1, lat2, lon2) {\n  const toRad = (value) =\u003e (Number(value) * Math.PI) / 180;\n  const earthRadiusMeters = 6371000;\n  const dLat = toRad(lat2 - lat1);\n  const dLon = toRad(lon2 - lon1);\n  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;\n  return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));\n}\nfunction mapDocs(payload, useCenterDistance = false) {\n  const docs = Array.isArray(payload.documents) ? payload.documents : [];\n  const mapped = docs\n    .filter((row) =\u003e row \u0026\u0026 typeof row === \"object\")\n    .map((row) =\u003e ({\n      xNumber: Number(row.x || 0),\n      yNumber: Number(row.y || 0),\n      placeName: String(row.place_name || \"\").trim(),\n      categoryName: String(row.category_name || \"\").trim(),\n      roadAddress: String(row.road_address_name || \"\").trim(),\n      address: String(row.address_name || \"\").trim(),\n      phone: String(row.phone || \"\").trim(),\n      distanceMeters: useCenterDistance \u0026\u0026 Number.isFinite(centerX) \u0026\u0026 Number.isFinite(centerY) \u0026\u0026 Number.isFinite(Number(row.x || NaN)) \u0026\u0026 Number.isFinite(Number(row.y || NaN))\n        ? Math.round(haversineMeters(centerY, centerX, Number(row.y || 0), Number(row.x || 0)))\n        : Number(row.distance || 0),\n      placeUrl: String(row.place_url || \"\").trim(),\n      x: String(row.x || \"\").trim(),\n      y: String(row.y || \"\").trim(),\n    }))\n    .filter((row) =\u003e row.placeName)\n    .filter((row) =\u003e !shouldExcludeText(row.placeName) \u0026\u0026 !shouldExcludeText(row.categoryName))\n    .sort((a, b) =\u003e a.distanceMeters - b.distanceMeters);\n  const result = [];\n  const seen = new Set();\n  for (const row of mapped) {\n    const key = normalize(row.placeName) + \"|\" + normalize(row.roadAddress || row.address);\n    if (seen.has(key)) continue;\n    seen.add(key);\n    result.push(row);\n  }\n  return result;\n}\nconst walkPool = mapDocs(walkPayload).filter((row) =\u003e !excludedSet.has(normalize(row.placeName)));\nconst walkCandidates = walkPool.slice(0, Math.max(6, Number(source.walkCandidateLimit || 14)));\nconst walkKeys = new Set(walkCandidates.map((row) =\u003e normalize(row.placeName) + \"|\" + normalize(row.roadAddress || row.address)));\nconst drivePayload = {\n  documents: [\n    ...(Array.isArray(drivePayloadEast.documents) ? drivePayloadEast.documents : []),\n    ...(Array.isArray(drivePayloadWest.documents) ? drivePayloadWest.documents : []),\n    ...(Array.isArray(drivePayloadNorth.documents) ? drivePayloadNorth.documents : []),\n    ...(Array.isArray(drivePayloadSouth.documents) ? drivePayloadSouth.documents : []),\n  ],\n  error: drivePayloadEast.error || drivePayloadWest.error || drivePayloadNorth.error || drivePayloadSouth.error || \"\",\n};\nconst drivePool = mapDocs(drivePayload, true)\n  .filter((row) =\u003e !excludedSet.has(normalize(row.placeName)))\n  .filter((row) =\u003e Number(row.distanceMeters || 0) \u003e Number(source.walkRadiusMeters || 1200))\n  .filter((row) =\u003e !walkKeys.has(normalize(row.placeName) + \"|\" + normalize(row.roadAddress || row.address)));\nconst driveCandidates = drivePool.slice(0, Math.max(8, Number(source.driveCandidateLimit || 18)));\nconst searchErrors = [\n  source.locationResolved ? \"\" : String(source.locationError || \"\"),\n  walkPayload.error ? String(walkPayload.error?.message || walkPayload.error || \"\") : \"\",\n  drivePayload.error ? String(drivePayload.error?.message || drivePayload.error || \"\") : \"\",\n].filter(Boolean);\nreturn [{\n  json: {\n    ...source,\n    walkCandidates,\n    driveCandidates,\n    totalWalkCandidateCount: walkPool.length,\n    totalDriveCandidateCount: drivePool.length,\n    totalCandidateCount: walkPool.length + drivePool.length,\n    searchError: searchErrors.join(\" | \"),\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       800,
+                                       -72
+                                   ],
+                      "id":  "6d313433-6d31-6d31-6d31-6d3134376d313438",
+                      "name":  "Select Candidate Places",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const selected = $(\u0027Select Candidate Places\u0027).first()?.json ?? {};\nconst holiday = $(\u0027Determine Holiday\u0027).first()?.json ?? {};\nconst weatherContext = selected.weatherContext || {};\nconst schema = {\n  type: \"OBJECT\",\n  properties: {\n    title: { type: \"STRING\" },\n    summary: { type: \"STRING\" },\n    weather_comment: { type: \"STRING\" },\n    walk_recommendations: {\n      type: \"ARRAY\",\n      items: {\n        type: \"OBJECT\",\n        properties: {\n          rank: { type: \"INTEGER\" },\n          place_name: { type: \"STRING\" },\n          reason: { type: \"STRING\" },\n          menu_hint: { type: \"STRING\" },\n          distance_meters: { type: \"INTEGER\" },\n          place_url: { type: \"STRING\" },\n          budget_fit_note: { type: \"STRING\" }\n        },\n        required: [\"rank\", \"place_name\", \"reason\", \"menu_hint\", \"distance_meters\", \"place_url\", \"budget_fit_note\"]\n      }\n    },\n    drive_recommendations: {\n      type: \"ARRAY\",\n      items: {\n        type: \"OBJECT\",\n        properties: {\n          rank: { type: \"INTEGER\" },\n          place_name: { type: \"STRING\" },\n          reason: { type: \"STRING\" },\n          menu_hint: { type: \"STRING\" },\n          distance_meters: { type: \"INTEGER\" },\n          place_url: { type: \"STRING\" },\n          budget_fit_note: { type: \"STRING\" }\n        },\n        required: [\"rank\", \"place_name\", \"reason\", \"menu_hint\", \"distance_meters\", \"place_url\", \"budget_fit_note\"]\n      }\n    },\n    fallback_note: { type: \"STRING\" }\n  },\n  required: [\"title\", \"summary\", \"weather_comment\", \"walk_recommendations\", \"drive_recommendations\", \"fallback_note\"]\n};\nconst userPayload = JSON.stringify({\n  target_location: selected.centerDisplayName || \"\",\n  location_query: selected.centerAddressQuery || \"\",\n  resolved_location: selected.centerLocationText || \"\",\n  date: holiday.today_date || \"\",\n  weekday: holiday.weekday_name || \"\",\n  request_source: selected.requestSource || \"scheduled\",\n  excluded_place_names: Array.isArray(selected.excludedPlaceNames) ? selected.excludedPlaceNames : [],\n  budget_per_person_krw: Number(selected.budgetPerPersonKrw || 10000),\n  walk_radius_meters: Number(selected.walkRadiusMeters || 1200),\n  drive_radius_meters: Number(selected.driveRadiusMeters || 6500),\n  weather: weatherContext,\n  rules: [\n    \"Return up to 5 walkable recommendations and up to 5 driveable recommendations.\",\n    \"Walkable means appropriate for about 15 minutes on foot. Driveable means appropriate for about 20 minutes by car using the provided distance bucket only.\",\n    \"Use weather and this week forecast trend to bias the menu style and category.\",\n    \"Favor places that are plausible for about 10000 KRW per person, but never present exact price claims unless they are explicitly given.\",\n    \"If request_source is teams-reroll, avoid excluded_place_names unless there are not enough alternatives.\",\n    \"Balance cuisine variety when possible.\"\n  ],\n  walk_candidates: Array.isArray(selected.walkCandidates) ? selected.walkCandidates : [],\n  drive_candidates: Array.isArray(selected.driveCandidates) ? selected.driveCandidates : [],\n}, null, 2);\nconst requestPayload = {\n  systemInstruction: {\n    parts: [\n      {\n        text: \"You recommend weekday team lunch options for an office team. Use only the provided candidate places. Do not invent restaurants, prices, ratings, parking, opening hours, or menus not grounded in the input. Budget is 10000 KRW per person as a target only, so describe budget fit cautiously and say when it is uncertain.\"\n      }\n    ]\n  },\n  contents: [\n    {\n      role: \"user\",\n      parts: [\n        { text: userPayload }\n      ]\n    }\n  ],\n  generationConfig: {\n    responseMimeType: \"application/json\",\n    responseSchema: schema\n  }\n};\nreturn [{\n  json: {\n    ...selected,\n    geminiRequest: requestPayload,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1056,
+                                       -72
+                                   ],
+                      "id":  "47734726-4773-4773-4773-4773472a4773472b",
+                      "name":  "Build Gemini Request",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "x-goog-api-key",
+                                                                                         "value":  "__REDACTED_GEMINI_API_KEY__"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "contentType":  "json",
+                                         "specifyBody":  "json",
+                                         "bodyParameters":  {
+                                                                "parameters":  [
+                                                                                   {
+
+                                                                                   }
+                                                                               ]
+                                                            },
+                                         "jsonBody":  "={{ $json.geminiRequest }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       1312,
+                                       -72
+                                   ],
+                      "id":  "28903d94-2890-2890-2890-28903d9828903d99",
+                      "name":  "Ask Gemini Lunch Recommendation",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const selected = $(\u0027Select Candidate Places\u0027).first()?.json ?? {};\nconst payload = $input.first()?.json ?? {};\nconst walkCandidates = Array.isArray(selected.walkCandidates) ? selected.walkCandidates : [];\nconst driveCandidates = Array.isArray(selected.driveCandidates) ? selected.driveCandidates : [];\nfunction normalize(value) {\n  return String(value || \"\").normalize(\"NFC\").replace(/\\s+/g, \"\").toLowerCase();\n}\nfunction compact(value, max = 220) {\n  const text = String(value || \"\").replace(/\\s+/g, \" \").trim();\n  return text.length \u003e max ? text.slice(0, max - 3) + \"...\" : text;\n}\nfunction summarizeRecommendationError(errorValue) {\n  const message = compact(errorValue);\n  if (!message) return \"\";\n  const upper = message.toUpperCase();\n  if (upper.includes(\"503\") || upper.includes(\"UNAVAILABLE\") || upper.includes(\"HIGH DEMAND\")) {\n    return \"\\uCD94\\uCC9C \\uBAA8\\uB378 \\uC751\\uB2F5\\uC774 \\uC9C0\\uC5F0\\uB418\\uC5B4 \\uD6C4\\uBCF4 \\uAE30\\uBC18 \\uAE30\\uBCF8 \\uCD94\\uCC9C\\uC73C\\uB85C \\uB300\\uCCB4\\uD588\\uC2B5\\uB2C8\\uB2E4.\";\n  }\n  return message;\n}\nfunction extractOutputText(response) {\n  if (typeof response === \"string\" \u0026\u0026 response.trim()) return response.trim();\n  if (response \u0026\u0026 typeof response === \"object\" \u0026\u0026 !Array.isArray(response) \u0026\u0026 typeof response.title === \"string\" \u0026\u0026 Array.isArray(response.walk_recommendations)) {\n    return JSON.stringify(response);\n  }\n  const candidates = Array.isArray(response?.candidates) ? response.candidates : [];\n  const chunks = [];\n  for (const candidate of candidates) {\n    const parts = Array.isArray(candidate?.content?.parts) ? candidate.content.parts : [];\n    for (const part of parts) {\n      if (typeof part?.text === \"string\" \u0026\u0026 part.text.trim()) chunks.push(part.text.trim());\n    }\n  }\n  return chunks.join(\"\\n\").trim();\n}\nconst outputText = extractOutputText(payload);\nlet parsed = null;\nlet recommendationApiError = \"\";\nif (payload.error) {\n  recommendationApiError = summarizeRecommendationError(payload.error?.message || payload.error || payload.message || \"Gemini request failed.\");\n} else if (!outputText) {\n  recommendationApiError = summarizeRecommendationError(\"Gemini returned no recommendation text.\");\n} else {\n  try {\n    parsed = JSON.parse(outputText);\n  } catch (error) {\n    recommendationApiError = summarizeRecommendationError(\"Failed to parse Gemini JSON: \" + error.message);\n  }\n}\nfunction hydrate(rawItems, defaults, fallbackReason) {\n  const candidateMap = new Map(defaults.map((item) =\u003e [normalize(item.placeName), item]));\n  const hydrated = [];\n  const used = new Set();\n  const sourceItems = Array.isArray(rawItems) ? rawItems : [];\n  for (let index = 0; index \u003c sourceItems.length; index += 1) {\n    const item = sourceItems[index] || {};\n    const matched = candidateMap.get(normalize(item.place_name));\n    if (!matched) continue;\n    const key = normalize(matched.placeName);\n    if (used.has(key)) continue;\n    used.add(key);\n    hydrated.push({\n      rank: Number(item.rank || hydrated.length + 1),\n      placeName: matched.placeName,\n      reason: compact(item.reason || fallbackReason),\n      menuHint: compact(item.menu_hint || matched.categoryName || \"\"),\n      budgetFitNote: compact(item.budget_fit_note || \"\\uC608\\uC0B0 \\uC801\\uD569\\uC131\\uC740 \\uC5C5\\uC885 \\uAE30\\uBC18 \\uCD94\\uC815\\uCE58\\uC785\\uB2C8\\uB2E4.\"),\n      distanceMeters: Number(item.distance_meters || matched.distanceMeters || 0),\n      placeUrl: String(item.place_url || matched.placeUrl || \"\"),\n      categoryName: matched.categoryName || \"\",\n      roadAddress: matched.roadAddress || matched.address || \"\",\n    });\n    if (hydrated.length \u003e= 5) break;\n  }\n  for (const candidate of defaults) {\n    if (hydrated.length \u003e= 5) break;\n    const key = normalize(candidate.placeName);\n    if (used.has(key)) continue;\n    used.add(key);\n    hydrated.push({\n      rank: hydrated.length + 1,\n      placeName: candidate.placeName,\n      reason: compact(fallbackReason),\n      menuHint: compact(candidate.categoryName || \"\"),\n      budgetFitNote: \"\\uC608\\uC0B0 \\uC801\\uD569\\uC131\\uC740 \\uC5C5\\uC885 \\uAE30\\uBC18 \\uCD94\\uC815\\uCE58\\uC785\\uB2C8\\uB2E4.\",\n      distanceMeters: Number(candidate.distanceMeters || 0),\n      placeUrl: String(candidate.placeUrl || \"\"),\n      categoryName: candidate.categoryName || \"\",\n      roadAddress: candidate.roadAddress || candidate.address || \"\",\n    });\n  }\n  return hydrated;\n}\nconst walkRecommendations = hydrate(\n  parsed?.walk_recommendations,\n  walkCandidates,\n  recommendationApiError ? \"\\uCD94\\uCC9C API \\uC751\\uB2F5\\uC744 \\uD655\\uC815\\uD558\\uC9C0 \\uBABB\\uD574 \\uAC70\\uB9AC\\uC640 \\uC5C5\\uC885 \\uAE30\\uC900\\uC758 \\uB3C4\\uBCF4 \\uD6C4\\uBCF4\\uB97C \\uC81C\\uC2DC\\uD569\\uB2C8\\uB2E4.\" : \"\\uB3C4\\uBCF4 \\uC774\\uB3D9\\uC5D0 \\uBB34\\uB9AC\\uAC00 \\uC801\\uC740 \\uD6C4\\uBCF4\\uB97C \\uC6B0\\uC120\\uD588\\uC2B5\\uB2C8\\uB2E4.\"\n);\nconst driveRecommendations = hydrate(\n  parsed?.drive_recommendations,\n  driveCandidates,\n  recommendationApiError ? \"\\uCD94\\uCC9C API \\uC751\\uB2F5\\uC744 \\uD655\\uC815\\uD558\\uC9C0 \\uBABB\\uD574 \\uCC28\\uB7C9 \\uC774\\uB3D9 \\uD6C4\\uBCF4\\uB97C \\uAC70\\uB9AC \\uAE30\\uC900\\uC73C\\uB85C \\uC81C\\uC2DC\\uD569\\uB2C8\\uB2E4.\" : \"\\uCC28\\uB7C9\\uC73C\\uB85C \\uC774\\uB3D9\\uD558\\uAE30 \\uBB34\\uB9AC\\uAC00 \\uC801\\uC740 \\uD6C4\\uBCF4\\uB97C \\uACE8\\uB790\\uC2B5\\uB2C8\\uB2E4.\"\n);\nreturn [{\n  json: {\n    ...selected,\n    title: String(parsed?.title || (selected.requestSource === \"teams-reroll\" ? \"\\uCD94\\uAC00 \\uC810\\uC2EC \\uCD94\\uCC9C\" : \"\\uC624\\uB298\\uC758 \\uC810\\uC2EC \\uCD94\\uCC9C\")),\n    summary: String(parsed?.summary || \"\\uAE30\\uC900 \\uC704\\uCE58 \\uADFC\\uCC98 \\uD6C4\\uBCF4\\uC5D0\\uC11C \\uB3C4\\uBCF4\\uAD8C\\uACFC \\uCC28\\uB7C9\\uAD8C\\uC744 \\uB098\\uB220 \\uC120\\uC815\\uD588\\uC2B5\\uB2C8\\uB2E4.\"),\n    weatherComment: String(parsed?.weather_comment || selected.weatherContext?.todaySummaryText || \"\"),\n    fallbackNote: String(parsed?.fallback_note || \"\"),\n    recommendationApiError,\n    walkRecommendations,\n    driveRecommendations,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1568,
+                                       -72
+                                   ],
+                      "id":  "05231d03-0523-0523-0523-05231d0705231d08",
+                      "name":  "Parse Recommendation",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const recommendation = $(\u0027Parse Recommendation\u0027).first()?.json ?? {};\nconst walkRecommendations = Array.isArray(recommendation.walkRecommendations) ? recommendation.walkRecommendations : [];\nconst driveRecommendations = Array.isArray(recommendation.driveRecommendations) ? recommendation.driveRecommendations : [];\nconst excludedBase = Array.isArray(recommendation.excludedPlaceNames) ? recommendation.excludedPlaceNames : [];\nfunction unique(values) {\n  return Array.from(new Set(values.filter(Boolean).map((value) =\u003e String(value).trim()).filter(Boolean)));\n}\nfunction formatTravel(mode, distanceMeters) {\n  const distance = Math.max(0, Math.round(Number(distanceMeters || 0)));\n  if (mode === \"walk\") {\n    const minutes = Math.max(1, Math.round(distance / 70));\n    return `${distance}m, 도보 약 ${minutes}분`;\n  }\n  const minutes = Math.max(3, Math.round(distance / 400));\n  return `${distance}m, 차량 약 ${minutes}분`;\n}\nfunction pushRecommendationSection(body, title, items, mode) {\n  body.push({ type: \"TextBlock\", text: title, weight: \"Bolder\", size: \"Medium\", wrap: true, spacing: \"Medium\" });\n  if (!Array.isArray(items) || items.length === 0) {\n    body.push({ type: \"TextBlock\", text: \"\\uD6C4\\uBCF4\\uB97C \\uD655\\uBCF4\\uD558\\uC9C0 \\uBABB\\uD588\\uC2B5\\uB2C8\\uB2E4.\", wrap: true, spacing: \"Small\", isSubtle: true });\n    return;\n  }\n  for (let index = 0; index \u003c items.length; index += 1) {\n    const item = items[index] || {};\n    const displayRank = index + 1;\n    const placeText = item.placeUrl ? `[${item.placeName}](${item.placeUrl})` : String(item.placeName || \"\").trim();\n    const menuText = String(item.menuHint || item.categoryName || \"\\uBA54\\uB274 \\uC815\\uBCF4 \\uC5C6\\uC74C\").trim();\n    const travelText = formatTravel(mode, item.distanceMeters);\n    body.push({\n      type: \"TextBlock\",\n      text: `${displayRank}\\\\. ${placeText} (${menuText}) (${travelText})`,\n      wrap: true,\n      spacing: \"Small\",\n    });\n    if (displayRank === 1 \u0026\u0026 String(item.reason || \"\").trim()) {\n      body.push({\n        type: \"TextBlock\",\n        text: `1\\uBC88 \\uCD94\\uCC9C \\uC774\\uC720: ${String(item.reason).trim()}`,\n        wrap: true,\n        spacing: \"None\",\n        isSubtle: true,\n      });\n    }\n  }\n}\nconst cardBody = [\n  { type: \"TextBlock\", text: recommendation.title || \"\\uC810\\uC2EC \\uCD94\\uCC9C\", weight: \"Bolder\", size: \"Large\", wrap: true },\n  { type: \"TextBlock\", text: String(recommendation.centerDisplayName || \"\"), wrap: true, spacing: \"Small\", isSubtle: true },\n];\npushRecommendationSection(cardBody, \"\\uB3C4\\uBCF4 \\uC774\\uC6A9 \\uCD94\\uCC9C \\uC2DD\\uB2F9 - 5\\uAC1C\", walkRecommendations, \"walk\");\npushRecommendationSection(cardBody, \"\\uCC28\\uB7C9 \\uC774\\uC6A9 \\uCD94\\uCC9C \\uC2DD\\uB2F9 - 5\\uAC1C\", driveRecommendations, \"drive\");\nif (recommendation.recommendationApiError) {\n  cardBody.push({ type: \"TextBlock\", text: \"\\uCC38\\uACE0: \" + String(recommendation.recommendationApiError), wrap: true, spacing: \"Medium\", color: \"Attention\" });\n}\nif (recommendation.searchError) {\n  cardBody.push({ type: \"TextBlock\", text: \"\\uCC38\\uACE0: \" + String(recommendation.searchError), wrap: true, spacing: \"Small\", color: \"Attention\" });\n}\nif (recommendation.weatherFetchError) {\n  cardBody.push({ type: \"TextBlock\", text: \"\\uB0A0\\uC528 API \\uCC38\\uACE0: \" + String(recommendation.weatherFetchError), wrap: true, spacing: \"Small\", color: \"Warning\" });\n}\nif (recommendation.fallbackNote) {\n  cardBody.push({ type: \"TextBlock\", text: String(recommendation.fallbackNote), wrap: true, spacing: \"Small\", isSubtle: true });\n}\nconst excludeNames = unique([\n  ...excludedBase,\n  ...walkRecommendations.map((item) =\u003e item.placeName),\n  ...driveRecommendations.map((item) =\u003e item.placeName),\n]);\nconst remainingCandidateCount = Math.max(0, Number(recommendation.totalCandidateCount || 0) - excludeNames.length);\nconst actions = [];\nif (recommendation.moreRecommendationsUrlBase \u0026\u0026 remainingCandidateCount \u003e 0) {\n  const query = \"?exclude=\" + encodeURIComponent(excludeNames.join(\"|\")) + \"\u0026source=teams\";\n  actions.push({ type: \"Action.OpenUrl\", title: \"\\uB2E4\\uB978 \\uCD94\\uCC9C \\uB354 \\uBC1B\\uAE30\", url: recommendation.moreRecommendationsUrlBase + query });\n}\nif (recommendation.nearbySearchLink) {\n  actions.push({ type: \"Action.OpenUrl\", title: \"\\uCE74\\uCE74\\uC624\\uB9F5\\uC5D0\\uC11C \\uBCF4\\uAE30\", url: recommendation.nearbySearchLink });\n}\nreturn [{\n  json: {\n    cardBody,\n    cardActions: actions,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1824,
+                                       -72
+                                   ],
+                      "id":  "77646976-7764-7764-7764-7764697277646971",
+                      "name":  "Build Teams Payload",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://redacted.invalid/powerautomate/webhook",
+                                         "sendBody":  true,
+                                         "contentType":  "json",
+                                         "specifyBody":  "json",
+                                         "bodyParameters":  {
+                                                                "parameters":  [
+                                                                                   {
+
+                                                                                   }
+                                                                               ]
+                                                            },
+                                         "jsonBody":  "={{ ({ type: \u0027message\u0027, attachments: [{ contentType: \u0027application/vnd.microsoft.card.adaptive\u0027, content: { type: \u0027AdaptiveCard\u0027, body: Array.isArray($json.cardBody) ? $json.cardBody : [], actions: Array.isArray($json.cardActions) ? $json.cardActions : [], \u0027$schema\u0027: \u0027http://adaptivecards.io/schemas/adaptive-card.json\u0027, version: \u00271.4\u0027 } }] }) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       2080,
+                                       -72
+                                   ],
+                      "id":  "2f413aae-2f41-2f41-2f41-2f413aaa2f413aa9",
+                      "name":  "Lunch Teams Webhook",
+                      "alwaysOutputData":  false
+                  }
+              ],
+    "connections":  {
+                        "Lunch Recommendation Schedule":  {
+                                                              "main":  [
+                                                                           [
+                                                                               {
+                                                                                   "node":  "Weekday Baseline",
+                                                                                   "type":  "main",
+                                                                                   "index":  0
+                                                                               }
+                                                                           ]
+                                                                       ]
+                                                          },
+                        "More Recommendation Webhook":  {
+                                                            "main":  [
+                                                                         [
+                                                                             {
+                                                                                 "node":  "Weekday Baseline",
+                                                                                 "type":  "main",
+                                                                                 "index":  0
+                                                                             }
+                                                                         ]
+                                                                     ]
+                                                        },
+                        "Weekday Baseline":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "Holiday DB Fallback",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "Holiday DB Fallback":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Determine Holiday",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Determine Holiday":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "Not Holiday",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ]
+                                                           ]
+                                              },
+                        "Not Holiday":  {
+                                            "main":  [
+                                                         [
+                                                             {
+                                                                 "node":  "Resolve Recommendation Center",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             }
+                                                         ],
+                                                         [
+
+                                                         ]
+                                                     ]
+                                        },
+                        "Resolve Recommendation Center":  {
+                                                              "main":  [
+                                                                           [
+                                                                               {
+                                                                                   "node":  "Build Search Center",
+                                                                                   "type":  "main",
+                                                                                   "index":  0
+                                                                               }
+                                                                           ]
+                                                                       ]
+                                                          },
+                        "Build Search Center":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Fetch Weather Forecast",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Fetch Weather Forecast":  {
+                                                       "main":  [
+                                                                    [
+                                                                        {
+                                                                            "node":  "Summarize Weather",
+                                                                            "type":  "main",
+                                                                            "index":  0
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                   },
+                        "Summarize Weather":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "Search Walkable Restaurants",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ]
+                                                           ]
+                                              },
+                        "Search Walkable Restaurants":  {
+                                                            "main":  [
+                                                                         [
+                                                                             {
+                                                                                 "node":  "Search Drive Restaurants East",
+                                                                                 "type":  "main",
+                                                                                 "index":  0
+                                                                             }
+                                                                         ]
+                                                                     ]
+                                                        },
+                        "Search Drive Restaurants East":  {
+                                                              "main":  [
+                                                                           [
+                                                                               {
+                                                                                   "node":  "Search Drive Restaurants West",
+                                                                                   "type":  "main",
+                                                                                   "index":  0
+                                                                               }
+                                                                           ]
+                                                                       ]
+                                                          },
+                        "Search Drive Restaurants West":  {
+                                                              "main":  [
+                                                                           [
+                                                                               {
+                                                                                   "node":  "Search Drive Restaurants North",
+                                                                                   "type":  "main",
+                                                                                   "index":  0
+                                                                               }
+                                                                           ]
+                                                                       ]
+                                                          },
+                        "Search Drive Restaurants North":  {
+                                                               "main":  [
+                                                                            [
+                                                                                {
+                                                                                    "node":  "Search Drive Restaurants South",
+                                                                                    "type":  "main",
+                                                                                    "index":  0
+                                                                                }
+                                                                            ]
+                                                                        ]
+                                                           },
+                        "Search Drive Restaurants South":  {
+                                                               "main":  [
+                                                                            [
+                                                                                {
+                                                                                    "node":  "Select Candidate Places",
+                                                                                    "type":  "main",
+                                                                                    "index":  0
+                                                                                }
+                                                                            ]
+                                                                        ]
+                                                           },
+                        "Select Candidate Places":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Build Gemini Request",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Build Gemini Request":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "Ask Gemini Lunch Recommendation",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "Ask Gemini Lunch Recommendation":  {
+                                                                "main":  [
+                                                                             [
+                                                                                 {
+                                                                                     "node":  "Parse Recommendation",
+                                                                                     "type":  "main",
+                                                                                     "index":  0
+                                                                                 }
+                                                                             ]
+                                                                         ]
+                                                            },
+                        "Parse Recommendation":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "Build Teams Payload",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "Build Teams Payload":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Lunch Teams Webhook",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "callerPolicy":  "workflowsFromSameOwner",
+                     "availableInMCP":  false
+                 }
+}

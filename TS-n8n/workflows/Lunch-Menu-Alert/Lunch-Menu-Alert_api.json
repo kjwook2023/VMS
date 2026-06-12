@@ -1,0 +1,302 @@
+{
+    "name":  "Lunch-Menu-Alert",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "field":  "cronExpression",
+                                                                           "expression":  "0 30 11 * * 1-5"
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       -1184,
+                                       -64
+                                   ],
+                      "id":  "739a8e1f-739a-739a-739a-739a8e1b739a8e1a",
+                      "name":  "Lunch Schedule",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const now = new Date();\nconst parts = new Intl.DateTimeFormat(\u0027en-CA\u0027, {\n  timeZone: \u0027Asia/Seoul\u0027,\n  year: \u0027numeric\u0027,\n  month: \u00272-digit\u0027,\n  day: \u00272-digit\u0027,\n  weekday: \u0027long\u0027,\n}).formatToParts(now);\nconst pick = (type) =\u003e parts.find((part) =\u003e part.type === type)?.value || \u0027\u0027;\nconst year = pick(\u0027year\u0027);\nconst month = pick(\u0027month\u0027);\nconst day = pick(\u0027day\u0027);\nconst weekdayEn = pick(\u0027weekday\u0027);\nconst weekdayMap = {\n  Monday: \u0027\\uC6D4\\uC694\\uC77C\u0027,\n  Tuesday: \u0027\\uD654\\uC694\\uC77C\u0027,\n  Wednesday: \u0027\\uC218\\uC694\\uC77C\u0027,\n  Thursday: \u0027\\uBAA9\\uC694\\uC77C\u0027,\n  Friday: \u0027\\uAE08\\uC694\\uC77C\u0027,\n  Saturday: \u0027\\uD1A0\\uC694\\uC77C\u0027,\n  Sunday: \u0027\\uC77C\\uC694\\uC77C\u0027,\n};\nconst isWeekend = weekdayEn === \u0027Saturday\u0027 || weekdayEn === \u0027Sunday\u0027;\nreturn [{\n  json: {\n    todayDate: `${year}-${month}-${day}`,\n    todayInt: `${year}${month}${day}`,\n    todayMMDD: `${month}${day}`,\n    WeekdayName: weekdayMap[weekdayEn] || weekdayEn,\n    IsWeekend: isWeekend,\n    DefaultIsHoliday: isWeekend,\n    DefaultHolidayName: isWeekend ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -928,
+                                       -64
+                                   ],
+                      "id":  "64100d94-6410-6410-6410-64100d9864100d99",
+                      "name":  "Weekday Baseline",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "=DECLARE @d DATE = CAST(\u0027{{ $(\u0027Weekday Baseline\u0027).item.json.todayDate }}\u0027 AS date);\nSELECT\n    CONVERT(VARCHAR(8), @d, 112) AS check_date,\n    CAST(CASE WHEN EXISTS (\n        SELECT 1\n        FROM TsMgmt.dbo.HolidayCalendarKR\n        WHERE HolidayDate = @d\n    ) THEN 1 ELSE 0 END AS bit) AS found_in_db,\n    ISNULL((SELECT TOP 1 HolidayName FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS holiday_name,\n    ISNULL((SELECT TOP 1 SourceType FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS source_type,\n    ISNULL((SELECT TOP 1 SourceYear FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), 0) AS source_year;"
+                                     },
+                      "type":  "n8n-nodes-base.microsoftSql",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       -672,
+                                       -64
+                                   ],
+                      "id":  "111940e3-1119-1119-1119-111940df111940de",
+                      "name":  "Holiday DB Fallback",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "microsoftSql":  {
+                                                               "id":  "2dZb5OQPbTyO3052",
+                                                               "name":  "TsMgmt(DevTest_SQL2022_26)"
+                                                           }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const baseline = $(\u0027Weekday Baseline\u0027).first().json;\nconst dbPayload = $(\u0027Holiday DB Fallback\u0027).first()?.json ?? {};\nconst dbFound = !dbPayload.error \u0026\u0026 [true, 1, \u00271\u0027, \u0027true\u0027].includes(dbPayload.found_in_db);\n\nlet isHoliday = !!baseline.DefaultIsHoliday;\nlet holidayName = baseline.DefaultHolidayName || (isHoliday ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027);\nlet holidayLookupSource = isHoliday ? \u0027default-weekend\u0027 : \u0027default-weekday\u0027;\n\nif (dbFound) {\n  isHoliday = true;\n  holidayName = String(dbPayload.holiday_name || \u0027\\uACF5\\uD734\\uC77C\u0027);\n  holidayLookupSource = dbPayload.source_type ? `db:${dbPayload.source_type}` : \u0027db\u0027;\n}\n\nreturn [{\n  json: {\n    check_date: baseline.todayInt,\n    today_date: baseline.todayDate,\n    is_holiday: isHoliday,\n    holiday_name: holidayName,\n    is_weekend: !!baseline.IsWeekend,\n    weekday_name: baseline.WeekdayName,\n    holiday_lookup_source: holidayLookupSource,\n    db_error: dbPayload.error || \u0027\u0027,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -416,
+                                       -64
+                                   ],
+                      "id":  "57ecb84a-57ec-57ec-57ec-57ecb84657ecb845",
+                      "name":  "Determine Holiday",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "loose",
+                                                                            "version":  2
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "03ac9b3c-03ac-03ac-03ac-03ac9b3803ac9b37",
+                                                                                   "leftValue":  "={{ $json.is_holiday }}",
+                                                                                   "rightValue":  false,
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "equals"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       -160,
+                                       -64
+                                   ],
+                      "id":  "01f21338-01f2-01f2-01f2-01f2133c01f2133d",
+                      "name":  "Not Holiday",
+                      "alwaysOutputData":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "url":  "https://pf.kakao.com/rocket-web/web/profiles/_xgUVZn/posts/recent?size=10",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Accept",
+                                                                                         "value":  "application/json,text/plain,*/*"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Referer",
+                                                                                         "value":  "https://pf.kakao.com/_xgUVZn/posts"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "User-Agent",
+                                                                                         "value":  "Mozilla/5.0"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       96,
+                                       -64
+                                   ],
+                      "id":  "608eb172-608e-608e-608e-608eb16e608eb16d",
+                      "name":  "Fetch Kakao Lunch Posts",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const fetchItems = $(\u0027Fetch Kakao Lunch Posts\u0027).all().map((item) =\u003e item?.json ?? {});\nconst fallbackLink = \u0027https://pf.kakao.com/_xgUVZn/posts\u0027;\n\nfunction normalizePosts(rawItems) {\n  if (!Array.isArray(rawItems)) return [];\n  if (rawItems.length === 1) {\n    const first = rawItems[0];\n    if (Array.isArray(first)) return first;\n    if (Array.isArray(first?.items)) return first.items;\n  }\n  return rawItems.filter((post) =\u003e post \u0026\u0026 typeof post === \"object\" \u0026\u0026 !post.error);\n}\n\nfunction extractContents(post) {\n    if (!Array.isArray(post?.contents)) return \"\";\n    return post.contents\n      .filter((entry) =\u003e entry \u0026\u0026 entry.t === \"text\" \u0026\u0026 entry.v)\n      .map((entry) =\u003e String(entry.v).trim())\n      .filter(Boolean)\n      .join(\"\\n\");\n  }\n\nfunction extractImageUrl(post) {\n  if (!Array.isArray(post?.media)) return \"\";\n  const image = post.media.find((entry) =\u003e entry \u0026\u0026 entry.type === \"image\");\n  const raw = image?.xlarge_url || image?.large_url || image?.medium_url || image?.url || \"\";\n  return String(raw).replace(/^http:/, \"https:\");\n}\n\nconst posts = normalizePosts(fetchItems);\nconst lunchPost = posts.find((post) =\u003e String(post?.title || \"\").includes(\"\\uC911\\uC2DD\"));\nconst requestErrorItem = fetchItems.find((item) =\u003e item?.error);\nconst requestFailed = Boolean(requestErrorItem);\nconst requestError = requestErrorItem?.error ?? null;\n\nreturn [{\n  json: {\n    requestFailed,\n    requestError,\n    postFound: Boolean(lunchPost),\n    postTitle: String(lunchPost?.title || \"\"),\n    postContentsText: extractContents(lunchPost),\n    postLink: String(lunchPost?.permalink || fallbackLink).replace(/^http:/, \"https:\"),\n    imageUrl: extractImageUrl(lunchPost),\n    postCreatedAt: lunchPost?.created_at || lunchPost?.published_at || \"\",\n    fallbackLink,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       352,
+                                       -64
+                                   ],
+                      "id":  "7244da54-7244-7244-7244-7244da507244da4f",
+                      "name":  "Select Lunch Post",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const holiday = $(\u0027Determine Holiday\u0027).first()?.json ?? {};\nconst selected = $(\u0027Select Lunch Post\u0027).first()?.json ?? {};\n\nfunction getWeekdayShortName(value) {\n  const raw = String(value || \u0027\u0027);\n  return raw ? raw.slice(0, 1) : \u0027\u0027;\n}\n\nfunction toKstString(value) {\n  if (value === null || value === undefined || value === \u0027\u0027) return \u0027\\uC5C6\\uC74C\u0027;\n  const date = new Date(value);\n  if (Number.isNaN(date.getTime())) return String(value);\n  const parts = new Intl.DateTimeFormat(\u0027en-CA\u0027, {\n    timeZone: \u0027Asia/Seoul\u0027,\n    year: \u0027numeric\u0027,\n    month: \u00272-digit\u0027,\n    day: \u00272-digit\u0027,\n    hour: \u00272-digit\u0027,\n    minute: \u00272-digit\u0027,\n    second: \u00272-digit\u0027,\n    hour12: false,\n  }).formatToParts(date);\n  const pick = (type) =\u003e parts.find((part) =\u003e part.type === type)?.value || \u0027\u0027;\n  return pick(\u0027year\u0027) + \u0027-\u0027 + pick(\u0027month\u0027) + \u0027-\u0027 + pick(\u0027day\u0027) + \u0027 \u0027 + pick(\u0027hour\u0027) + \u0027:\u0027 + pick(\u0027minute\u0027) + \u0027:\u0027 + pick(\u0027second\u0027) + \u0027 KST\u0027;\n}\n\nconst requestFailed = Boolean(selected.requestFailed);\nconst postFound = Boolean(selected.postFound);\nconst todayDate = String(holiday.today_date || \u0027\u0027).trim();\nconst weekdayShort = getWeekdayShortName(holiday.weekday_name);\nconst titlePrefix = todayDate ? `${todayDate}${weekdayShort ? `(${weekdayShort})` : \u0027\u0027} \\uC810\\uC2EC \\uBA54\\uB274 \\uC548\\uB0B4` : \u0027\\uC810\\uC2EC \\uBA54\\uB274 \\uC548\\uB0B4\u0027;\n\nlet title = titlePrefix;\nlet summary = \u0027\\uCE74\\uCE74\\uC624 \\uCC44\\uB110\\uC5D0\\uC11C \\uC624\\uB298 \\uC911\\uC2DD \\uBA54\\uB274\\uB97C \\uD655\\uC778\\uD574 \\uC8FC\\uC138\\uC694.\u0027;\nlet postLink = String(selected.fallbackLink || \u0027https://pf.kakao.com/_xgUVZn/posts\u0027);\nlet imageUrl = String(selected.imageUrl || \u0027\u0027);\n\nif (requestFailed) {\n  title = `${titlePrefix} - \\uC870\\uD68C \\uC624\\uB958`;\n  summary = \u0027\\uCE74\\uCE74\\uC624 \\uCC44\\uB110 \\uC810\\uC2EC \\uBA54\\uB274 \\uC815\\uBCF4\\uB97C \\uBD88\\uB7EC\\uC624\\uC9C0 \\uBABB\\uD588\\uC2B5\\uB2C8\\uB2E4.\u0027;\n  summary = String(selected.requestError?.message || selected.requestError || \u0027\\uC6D0\\uC778 \\uC815\\uBCF4\\uB97C \\uD655\\uC778\\uD560 \\uC218 \\uC5C6\\uC2B5\\uB2C8\\uB2E4.\u0027);\n  imageUrl = \u0027\u0027;\n} else if (postFound) {\n  title = titlePrefix;\n  summary = String(selected.postTitle || \"\\uC624\\uB298 \\uC911\\uC2DD \\uBA54\\uB274\");\n  postLink = String(selected.postLink || postLink);\n} else {\n  title = titlePrefix;\n  summary = \u0027\\uC624\\uB298 \\uC911\\uC2DD \\uBA54\\uB274 \\uAC8C\\uC2DC\\uAE00\\uC744 \\uCC3E\\uC9C0 \\uBABB\\uD588\\uC2B5\\uB2C8\\uB2E4.\u0027;\n  summary = \u0027\\uCE74\\uCE74\\uC624 \\uCC44\\uB110 \\uCD5C\\uC2E0 \\uAC8C\\uC2DC\\uAE00\\uC744 \\uC9C1\\uC811 \\uD655\\uC778\\uD574 \\uC8FC\\uC138\\uC694.\u0027;\n  imageUrl = \u0027\u0027;\n}\n\nconst body = [\n  { type: \u0027TextBlock\u0027, text: title, weight: \u0027Bolder\u0027, size: \u0027Medium\u0027, wrap: true },\n  { type: \u0027TextBlock\u0027, text: summary, wrap: true, spacing: \u0027Small\u0027 },\n  ...(imageUrl ? [{ type: \"Image\", url: imageUrl, altText: summary, size: \"Stretch\", spacing: \"Small\" }] : []),\n  { type: \u0027FactSet\u0027, facts: [\n    { title: \u0027\\uAE30\\uC900\\uC77C\u0027, value: String(holiday.today_date || \u0027\u0027) },\n    { title: \u0027\\uD655\\uC778 \\uC2DC\\uAC01\u0027, value: toKstString(Date.now()) },\n    ...(postFound ? [{ title: \u0027\\uAC8C\\uC2DC \\uC2DC\\uAC01\u0027, value: toKstString(selected.postCreatedAt) }] : []),\n  ] },\n];\n\nconst actions = [\n  { type: \u0027Action.OpenUrl\u0027, title: postFound ? \u0027\\uAC8C\\uC2DC\\uAE00 \\uBCF4\\uAE30\u0027 : \u0027\\uCC44\\uB110 \\uBCF4\\uAE30\u0027, url: postLink },\n];\n\nreturn [{\n  json: {\n    cardBody: body,\n    cardActions: actions,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       608,
+                                       -64
+                                   ],
+                      "id":  "07960070-0796-0796-0796-0796007407960075",
+                      "name":  "Build Teams Payload",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://redacted.invalid/powerautomate/webhook",
+                                         "sendBody":  true,
+                                         "contentType":  "json",
+                                         "specifyBody":  "json",
+                                         "bodyParameters":  {
+                                                                "parameters":  [
+                                                                                   {
+
+                                                                                   }
+                                                                               ]
+                                                            },
+                                         "jsonBody":  "={{ ({ type: \u0027message\u0027, attachments: [{ contentType: \u0027application/vnd.microsoft.card.adaptive\u0027, content: { type: \u0027AdaptiveCard\u0027, body: Array.isArray($json.cardBody) ? $json.cardBody : [], actions: Array.isArray($json.cardActions) ? $json.cardActions : [], \u0027$schema\u0027: \u0027http://adaptivecards.io/schemas/adaptive-card.json\u0027, version: \u00271.4\u0027 } }] }) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       864,
+                                       -64
+                                   ],
+                      "id":  "0eb013b8-0eb0-0eb0-0eb0-0eb013bc0eb013bd",
+                      "name":  "Lunch Teams Webhook",
+                      "alwaysOutputData":  false
+                  }
+              ],
+    "connections":  {
+                        "Lunch Schedule":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Weekday Baseline",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "Weekday Baseline":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "Holiday DB Fallback",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "Holiday DB Fallback":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Determine Holiday",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Determine Holiday":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "Not Holiday",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ]
+                                                           ]
+                                              },
+                        "Not Holiday":  {
+                                            "main":  [
+                                                         [
+                                                             {
+                                                                 "node":  "Fetch Kakao Lunch Posts",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             }
+                                                         ],
+                                                         [
+
+                                                         ]
+                                                     ]
+                                        },
+                        "Fetch Kakao Lunch Posts":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Select Lunch Post",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Select Lunch Post":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "Build Teams Payload",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ]
+                                                           ]
+                                              },
+                        "Build Teams Payload":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Lunch Teams Webhook",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "callerPolicy":  "workflowsFromSameOwner",
+                     "availableInMCP":  false
+                 }
+}

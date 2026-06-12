@@ -1,0 +1,373 @@
+{
+    "name":  "Clean-Daily-Scrum",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const items = $input.all();\n\nconst allUsers = [\n  { name: \"\\uC870\\uD604\\uC7AC\", slackId: \"U07K2APTEVD\" },\n  { name: \"\\uAE40\\uBBFC\\uC601\", slackId: \"U07EEDTJZQE\" }\n];\n\nconst adminUser = { name: \"\\uAE40\\uC9C4\\uC6B1\", slackId: \"U05DQA2L7JT\" };\nconst baseline = $(\u0027Weekday Baseline\u0027).first()?.json ?? {};\nconst today = String(baseline.todayDate || \u0027\u0027);\nconst dateString = new Intl.DateTimeFormat(\u0027ko-KR\u0027, { timeZone: \u0027Asia/Seoul\u0027, year: \u0027numeric\u0027, month: \u0027long\u0027, day: \u0027numeric\u0027 }).format(new Date());\n\nconst absentSlackIds = [];\nconst absentNamesList = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const itemName = data.name || \u0027\u0027;\n  const startDate = data.property_date?.start;\n  const endDate = data.property_date?.end || startDate;\n  const keywords = [\"\\uD734\\uAC00\", \"\\uC5F0\\uCC28\", \"\\uC548\\uC2DD\\uC6D4\", \"\\uACF5\\uAC00\"];\n  const hasKeyword = keywords.some((kw) =\u003e itemName.includes(kw));\n\n  if (hasKeyword \u0026\u0026 startDate \u0026\u0026 today \u003e= startDate \u0026\u0026 today \u003c= endDate) {\n    for (const user of allUsers) {\n      if (itemName.includes(user.name) \u0026\u0026 !absentSlackIds.includes(user.slackId)) {\n        absentSlackIds.push(user.slackId);\n        absentNamesList.push(user.name);\n      }\n    }\n  }\n}\n\nconst activeUsers = allUsers.filter((user) =\u003e !absentSlackIds.includes(user.slackId));\nconst notifyAdminOnly = activeUsers.length === 0;\nconst targetUsers = notifyAdminOnly ? [adminUser] : activeUsers;\nconst mentions = targetUsers.map((user) =\u003e `\u003c@${user.slackId}\u003e`).join(\u0027, \u0027);\nconst absentNamesText = absentNamesList.length \u003e 0 ? absentNamesList.join(\u0027, \u0027) : \u0027\\uC5C6\\uC74C\u0027;\n\nconst message = notifyAdminOnly\n  ? `\\uD83D\\uDCE2 ${mentions} \\uB2D8!\\n\\n[${dateString}] \\uAE30\\uC900 \\uC804\\uC6D0\\uC774 \\uD734\\uAC00 \\uB4F1\\uC73C\\uB85C \\uBD84\\uB958\\uB418\\uC5B4 \\uC5C5\\uBB34\\uAD00\\uB9AC \\uC2A4\\uD06C\\uB7FC \\uC791\\uC131 \\uB300\\uC0C1\\uC790\\uAC00 \\uC5C6\\uC2B5\\uB2C8\\uB2E4.\\n\\n\\uBD80\\uC7AC \\uC778\\uC6D0: ${absentNamesText}\\n\\uD655\\uC778 \\uBD80\\uD0C1\\uB4DC\\uB9BD\\uB2C8\\uB2E4.`\n  : `\\uD83D\\uDCE2 ${mentions} \\uB2D8! \\uC5C5\\uBB34\\uAD00\\uB9AC \\uC2A4\\uD06C\\uB7FC \\uC791\\uC131 \\uC2DC\\uAC04\\uC785\\uB2C8\\uB2E4.\\n\\n*${dateString}* \\uC624\\uB298 \\uC5C5\\uBB34 \\uC815\\uB9AC\\uB97C \\uBD80\\uD0C1\\uB4DC\\uB9BD\\uB2C8\\uB2E4.\\n\\n1. \\uC624\\uB298 \\uC9C4\\uD589\\uD55C \\uC5C5\\uBB34\\uB97C \\uC815\\uB9AC\\uD574 \\uC8FC\\uC138\\uC694.\\n\\n2. \\uC624\\uB298 *Blocker \\uACF5\\uC720*\\n  a. *Blocker:* (\\uBB38\\uC81C\\uAC00 \\uB41C \\uB0B4\\uC6A9)\\n  b. *Need:* (\\uB3C4\\uC6C0\\uC774 \\uD544\\uC694\\uD55C \\uB0B4\\uC6A9)\\n  c. *By:* (\\uC9C0\\uC6D0\\uC774 \\uD544\\uC694\\uD55C \\uB300\\uC0C1)\\n  d. *\\uCC38\\uACE0:* \\uD574\\uACB0 \\uB610\\uB294 \\uD655\\uC778 \\uC608\\uC815 \\uC0AC\\uD56D\\n\\n*\\uC624\\uB298 \\uBD80\\uC7AC(\\uD734\\uAC00 \\uB4F1) \\uC778\\uC6D0:* ${absentSlackIds.length \u003e 0 ? `\\uC788\\uC74C (${absentNamesText})` : \u0027\\uC5C6\\uC74C\u0027}\\n\\n\\uC624\\uB298 \\uB9C8\\uBB34\\uB9AC \\uC798 \\uBD80\\uD0C1\\uB4DC\\uB9BD\\uB2C8\\uB2E4! \\uD83D\\uDE80`;\n\nreturn [{\n  json: {\n    text: message,\n    date: dateString,\n    absent_count: absentSlackIds.length,\n    absentNames: absentNamesText,\n    notify_admin_only: notifyAdminOnly\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       592,
+                                       -272
+                                   ],
+                      "id":  "cbffff30-7fac-4c59-a73b-90a4e3fd564c",
+                      "name":  "Slack용 휴가체크",
+                      "alwaysOutputData":  true,
+                      "disabled":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "select":  "channel",
+                                         "channelId":  {
+                                                           "__rl":  true,
+                                                           "value":  "2-기술지원_데일리스크럼",
+                                                           "mode":  "name"
+                                                       },
+                                         "text":  "={{ $json.text }}",
+                                         "otherOptions":  {
+                                                              "includeLinkToWorkflow":  false
+                                                          }
+                                     },
+                      "type":  "n8n-nodes-base.slack",
+                      "typeVersion":  2.3,
+                      "position":  [
+                                       768,
+                                       -272
+                                   ],
+                      "id":  "6dad6793-ccb1-40ff-9482-da17ce7281d7",
+                      "name":  "Send a message",
+                      "webhookId":  "071046e9-3592-4279-a990-8ffb88ec03d9",
+                      "notesInFlow":  false,
+                      "credentials":  {
+                                          "slackApi":  {
+                                                           "id":  "pOho5rxIJo9ZU9ee",
+                                                           "name":  "tsbot-slackAPI"
+                                                       }
+                                      },
+                      "disabled":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "url":  "=http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?solYear={{ $json[\u0027Year\u0027] }}\u0026numOfRows=50\u0026ServiceKey=ea205130648aa0e11f1cc778bef29d18ef68b212e587c5590792dbd4f0a6b5c0",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       -112,
+                                       0
+                                   ],
+                      "id":  "f6fed274-ef78-4c48-92e9-e8491399bf93",
+                      "name":  "HTTP Request",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const recurringHolidays = [\n  { date: \u00270501\u0027, dateName: \u0027\\uADFC\\uB85C\\uC790\\uC758 \\uB0A0\u0027 },\n  { date: \u00271231\u0027, dateName: \u0027\\uCC3D\\uB9BD\\uAE30\\uB150\\uC77C\\uB300\\uD734\u0027 }\n];\n\nconst baseline = $(\u0027Weekday Baseline\u0027).first().json;\nconst apiPayload = $(\u0027HTTP Request\u0027).first()?.json ?? {};\nconst dbPayload = $(\u0027Holiday DB Fallback\u0027).first()?.json ?? {};\n\nfunction normalizeApiItems(raw) {\n  if (!raw) return [];\n  return Array.isArray(raw) ? raw : [raw];\n}\n\nconst apiItems = !apiPayload.error\n  ? normalizeApiItems(apiPayload.response?.body?.items?.item)\n  : [];\nconst apiMatch = apiItems.find((item) =\u003e String(item?.locdate ?? \u0027\u0027) === String(baseline.todayInt));\nconst customMatch = recurringHolidays.find((item) =\u003e item.date === baseline.todayMMDD);\nconst dbFound = !dbPayload.error \u0026\u0026 [true, 1, \u00271\u0027, \u0027true\u0027].includes(dbPayload.found_in_db);\n\nlet isHoliday = !!baseline.DefaultIsHoliday;\nlet holidayName = baseline.DefaultHolidayName || (isHoliday ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027);\nlet holidayLookupSource = isHoliday ? \u0027default-weekend\u0027 : \u0027default-weekday\u0027;\n\nif (apiMatch) {\n  isHoliday = true;\n  holidayName = String(apiMatch.dateName || \u0027\\uACF5\\uD734\\uC77C\u0027);\n  holidayLookupSource = \u0027api\u0027;\n} else if (customMatch) {\n  isHoliday = true;\n  holidayName = customMatch.dateName;\n  holidayLookupSource = \u0027custom\u0027;\n} else if (dbFound) {\n  isHoliday = true;\n  holidayName = String(dbPayload.holiday_name || \u0027\\uACF5\\uD734\\uC77C\u0027);\n  holidayLookupSource = dbPayload.source_type ? `db:${dbPayload.source_type}` : \u0027db\u0027;\n}\n\nreturn [{\n  json: {\n    check_date: baseline.todayInt,\n    is_holiday: isHoliday,\n    holiday_name: holidayName,\n    is_weekend: !!baseline.IsWeekend,\n    weekday_name: baseline.WeekdayName,\n    holiday_lookup_source: holidayLookupSource,\n    holiday_lookup_failed: Boolean(apiPayload.error) \u0026\u0026 Boolean(dbPayload.error),\n    api_error: apiPayload.error?.message || apiPayload.error || \u0027\u0027,\n    db_error: dbPayload.error || \u0027\u0027\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       64,
+                                       0
+                                   ],
+                      "id":  "c84341ab-10c7-470f-a34f-0ab432ea1139",
+                      "name":  "Code in JavaScript1",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  2
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "94cc5a32-5c4b-4b17-8643-a09701554119",
+                                                                                   "leftValue":  "={{ $json.is_holiday }}",
+                                                                                   "rightValue":  false,
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "equals"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       224,
+                                       0
+                                   ],
+                      "id":  "415dec70-d0cb-46eb-896d-f9ba00e9b6a2",
+                      "name":  "휴일체크",
+                      "alwaysOutputData":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "field":  "weeks",
+                                                                           "triggerAtDay":  [
+                                                                                                1,
+                                                                                                2,
+                                                                                                3,
+                                                                                                4,
+                                                                                                5
+                                                                                            ],
+                                                                           "triggerAtHour":  16,
+                                                                           "triggerAtMinute":  30
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       -288,
+                                       0
+                                   ],
+                      "id":  "3c6f643d-0e07-4a6d-855b-c0d36c544f77",
+                      "name":  "Clean-DailyScrum",
+                      "alwaysOutputData":  true,
+                      "retryOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "resource":  "databasePage",
+                                         "operation":  "getAll",
+                                         "databaseId":  {
+                                                            "__rl":  true,
+                                                            "value":  "205cb995-8309-80e4-ac2a-c8589a1783eb",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "기술지원캘린더DB",
+                                                            "cachedResultUrl":  "https://www.notion.so/205cb995830980e4ac2ac8589a1783eb"
+                                                        },
+                                         "options":  {
+                                                         "sort":  {
+                                                                      "sortValue":  [
+                                                                                        {
+                                                                                            "key":  "Date|date",
+                                                                                            "direction":  "descending"
+                                                                                        }
+                                                                                    ]
+                                                                  }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.notion",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       416,
+                                       -112
+                                   ],
+                      "id":  "4ae3912f-6bf2-4683-adba-6ebb6b9597d2",
+                      "name":  "Get many database pages",
+                      "credentials":  {
+                                          "notionApi":  {
+                                                            "id":  "LrLyYGhPvHMbPfZm",
+                                                            "name":  "tsupport API"
+                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const items = $input.all();\n\nconst allUsers = [\n  { name: \"\\uC870\\uD604\\uC7AC\", slackId: \"U07K2APTEVD\", email: \"jyi30@vms-solutions.com\" },\n  { name: \"\\uAE40\\uBBFC\\uC601\", slackId: \"U07EEDTJZQE\", email: \"mykim@vms-solutions.com\" }\n];\n\nconst adminUser = {\n  name: \"\\uAE40\\uC9C4\\uC6B1\",\n  slackId: \"U05DQA2L7JT\",\n  email: \"jwkim@vms-solutions.com\"\n};\n\nconst baseline = $(\u0027Weekday Baseline\u0027).first()?.json ?? {};\nconst today = String(baseline.todayDate || \u0027\u0027);\nconst dateString = new Intl.DateTimeFormat(\u0027ko-KR\u0027, { timeZone: \u0027Asia/Seoul\u0027, year: \u0027numeric\u0027, month: \u0027long\u0027, day: \u0027numeric\u0027 }).format(new Date());\n\nconst absentSlackIds = [];\nconst absentNamesList = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const itemName = data.name || \u0027\u0027;\n  const startDate = data.property_date?.start;\n  const endDate = data.property_date?.end || startDate;\n  const keywords = [\n    \"\\uD734\\uAC00\",\n    \"\\uC5F0\\uCC28\",\n    \"\\uC548\\uC2DD\\uC6D4\",\n    \"\\uACF5\\uAC00\",\n    \"\\uACF5\\uD734\\uC77C\",\n    \"\\uD734\\uC77C\"\n  ];\n  const hasKeyword = keywords.some((kw) =\u003e itemName.includes(kw));\n\n  if (hasKeyword \u0026\u0026 startDate \u0026\u0026 today \u003e= startDate \u0026\u0026 today \u003c= endDate) {\n    for (const user of allUsers) {\n      if (itemName.includes(user.name) \u0026\u0026 !absentSlackIds.includes(user.slackId)) {\n        absentSlackIds.push(user.slackId);\n        absentNamesList.push(user.name);\n      }\n    }\n  }\n}\n\nconst activeUsers = allUsers.filter((user) =\u003e !absentSlackIds.includes(user.slackId));\nconst notifyAdminOnly = activeUsers.length === 0;\nconst targetUsers = notifyAdminOnly ? [adminUser] : activeUsers;\nconst absentNamesText = absentNamesList.length \u003e 0 ? absentNamesList.join(\u0027, \u0027) : \u0027\\uC5C6\\uC74C\u0027;\n\nconst slackMentions = targetUsers.map((user) =\u003e `\u003c@${user.slackId}\u003e`).join(\u0027, \u0027);\nconst teamsText = targetUsers.map((user) =\u003e `\u003cat\u003e${user.name}\u003c/at\u003e`).join(\u0027, \u0027);\nconst teamsEntities = targetUsers.map((user) =\u003e ({\n  type: \u0027mention\u0027,\n  text: `\u003cat\u003e${user.name}\u003c/at\u003e`,\n  mentioned: { id: user.email, name: user.name }\n}));\n\nconst slackMessage = notifyAdminOnly\n  ? `\\uD83D\\uDCE2 ${slackMentions} \\uB2D8!\\n\\n[${dateString}] \\uAE30\\uC900 \\uC804\\uC6D0\\uC774 \\uD734\\uAC00 \\uB4F1\\uC73C\\uB85C \\uBD84\\uB958\\uB418\\uC5B4 \\uC5C5\\uBB34\\uAD00\\uB9AC \\uC2A4\\uD06C\\uB7FC \\uC791\\uC131 \\uB300\\uC0C1\\uC790\\uAC00 \\uC5C6\\uC2B5\\uB2C8\\uB2E4.\\n\\n\\uBD80\\uC7AC \\uC778\\uC6D0: ${absentNamesText}\\n\\uD655\\uC778 \\uBD80\\uD0C1\\uB4DC\\uB9BD\\uB2C8\\uB2E4.`\n  : `\\uD83D\\uDCE2 ${slackMentions} \\uB2D8! \\uC5C5\\uBB34\\uAD00\\uB9AC \\uC2A4\\uD06C\\uB7FC \\uC791\\uC131 \\uC2DC\\uAC04\\uC785\\uB2C8\\uB2E4.\\n\\n*${dateString}* \\uC624\\uB298 \\uC5C5\\uBB34 \\uC815\\uB9AC\\uB97C \\uBD80\\uD0C1\\uB4DC\\uB9BD\\uB2C8\\uB2E4.\\n\\n1. \\uC624\\uB298 \\uC9C4\\uD589\\uD55C \\uC5C5\\uBB34\\uB97C \\uC815\\uB9AC\\uD574 \\uC8FC\\uC138\\uC694.\\n\\n2. \\uC624\\uB298 *Blocker \\uACF5\\uC720*\\n  a. *Blocker:* (\\uBB38\\uC81C\\uAC00 \\uB41C \\uB0B4\\uC6A9)\\n  b. *Need:* (\\uB3C4\\uC6C0\\uC774 \\uD544\\uC694\\uD55C \\uB0B4\\uC6A9)\\n  c. *By:* (\\uC9C0\\uC6D0\\uC774 \\uD544\\uC694\\uD55C \\uB300\\uC0C1)\\n  d. *\\uCC38\\uACE0:* \\uD574\\uACB0 \\uB610\\uB294 \\uD655\\uC778 \\uC608\\uC815 \\uC0AC\\uD56D\\n\\n*\\uC624\\uB298 \\uBD80\\uC7AC(\\uD734\\uAC00 \\uB4F1) \\uC778\\uC6D0:* ${absentNamesList.length \u003e 0 ? `\\uC788\\uC74C (${absentNamesText})` : \u0027\\uC5C6\\uC74C\u0027}\\n\\n\\uC624\\uB298 \\uB9C8\\uBB34\\uB9AC \\uC798 \\uBD80\\uD0C1\\uB4DC\\uB9BD\\uB2C8\\uB2E4! \\uD83D\\uDE80`;\n\nconst titleText = notifyAdminOnly\n  ? `\\uD83D\\uDCE2 ${teamsText} \\uB2D8! \\uC624\\uB298 \\uC5C5\\uBB34\\uAD00\\uB9AC \\uC2A4\\uD06C\\uB7FC \\uC791\\uC131 \\uB300\\uC0C1\\uC790\\uAC00 \\uC5C6\\uC2B5\\uB2C8\\uB2E4.`\n  : `\\uD83D\\uDCE2 ${teamsText} \\uB2D8! \\uC5C5\\uBB34\\uAD00\\uB9AC \\uC2A4\\uD06C\\uB7FC \\uC791\\uC131 \\uC2DC\\uAC04\\uC785\\uB2C8\\uB2E4.`;\n\nconst subtitleText = notifyAdminOnly\n  ? `**[${dateString}]** \\uAE30\\uC900 \\uC804\\uC6D0\\uC774 \\uD734\\uAC00 \\uB4F1\\uC73C\\uB85C \\uBD84\\uB958\\uB418\\uC5C8\\uC2B5\\uB2C8\\uB2E4.`\n  : `**[${dateString}]** \\uC5C5\\uBB34\\uAD00\\uB9AC \\uC2A4\\uD06C\\uB7FC \\uC791\\uC131 \\uBD80\\uD0C1\\uB4DC\\uB9BD\\uB2C8\\uB2E4.`;\n\nconst bodyText = notifyAdminOnly\n  ? \u0027\\uBD80\\uC7AC \\uC778\\uC6D0\\uC744 \\uD655\\uC778\\uD574 \\uC8FC\\uC138\\uC694.\u0027\n  : \u00271. \\uC624\\uB298 \\uC9C4\\uD589\\uD55C \\uC5C5\\uBB34\\uB97C \\uC815\\uB9AC\\uD574 \\uC8FC\\uC138\\uC694.\\n\\n2. \\uC624\\uB298 **Blocker \\uACF5\\uC720**\\n- Blocker: (\\uBB38\\uC81C\\uAC00 \\uB41C \\uB0B4\\uC6A9)\\n- Need: (\\uB3C4\\uC6C0\\uC774 \\uD544\\uC694\\uD55C \\uB0B4\\uC6A9)\\n- By: (\\uC9C0\\uC6D0\\uC774 \\uD544\\uC694\\uD55C \\uB300\\uC0C1)\\n- \\uCC38\\uACE0: \\uD574\\uACB0 \\uB610\\uB294 \\uD655\\uC778 \\uC608\\uC815 \\uC0AC\\uD56D\u0027;\n\nconst absenceText = `*\\uC624\\uB298 \\uBD80\\uC7AC(\\uD734\\uAC00 \\uB4F1) \\uC778\\uC6D0:* ${absentNamesList.length \u003e 0 ? `\\uC788\\uC74C (${absentNamesText})` : \u0027\\uC5C6\\uC74C\u0027}`;\n\nconst footerText = notifyAdminOnly\n  ? \u0027\\uAD00\\uB9AC\\uC790 \\uD655\\uC778 \\uBD80\\uD0C1\\uB4DC\\uB9BD\\uB2C8\\uB2E4.\u0027\n  : \u0027\\uC624\\uB298 \\uB9C8\\uBB34\\uB9AC \\uC798 \\uBD80\\uD0C1\\uB4DC\\uB9BD\\uB2C8\\uB2E4! \\uD83D\\uDE80\u0027;\n\nreturn [{\n  json: {\n    text: slackMessage,\n    teamsText,\n    teamsEntities,\n    absentNames: absentNamesText,\n    absent_count: absentSlackIds.length,\n    date: dateString,\n    notify_admin_only: notifyAdminOnly,\n    titleText,\n    subtitleText,\n    bodyText,\n    absenceText,\n    footerText\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       608,
+                                       48
+                                   ],
+                      "id":  "9d30c624-6163-40a5-85ee-8b9fc5d44091",
+                      "name":  "Team용 휴가체크",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://redacted.invalid/powerautomate/webhook",
+                                         "sendBody":  true,
+                                         "contentType":  "json",
+                                         "specifyBody":  "json",
+                                         "bodyParameters":  {
+                                                                "parameters":  [
+                                                                                   {
+
+                                                                                   }
+                                                                               ]
+                                                            },
+                                         "jsonBody":  "={{ ({\n  type: \u0027message\u0027,\n  attachments: [\n    {\n      contentType: \u0027application/vnd.microsoft.card.adaptive\u0027,\n      content: {\n        type: \u0027AdaptiveCard\u0027,\n        body: [\n          {\n            type: \u0027TextBlock\u0027,\n            text: $json.titleText,\n            weight: \u0027Bolder\u0027,\n            size: \u0027Medium\u0027,\n            wrap: true,\n          },\n          {\n            type: \u0027TextBlock\u0027,\n            text: $json.subtitleText,\n            wrap: true,\n            spacing: \u0027None\u0027,\n          },\n          {\n            type: \u0027TextBlock\u0027,\n            text: $json.bodyText,\n            wrap: true,\n            spacing: \u0027Medium\u0027,\n          },\n          {\n            type: \u0027TextBlock\u0027,\n            text: $json.absenceText || \u0027\u0027,\n            wrap: true,\n            color: $json.absent_count \u003e 0 ? \u0027Attention\u0027 : \u0027Default\u0027,\n            spacing: \u0027Small\u0027,\n            isVisible: Boolean($json.absenceText),\n          },\n          {\n            type: \u0027TextBlock\u0027,\n            text: $json.footerText || \u0027\u0027,\n            wrap: true,\n            spacing: \u0027Small\u0027,\n            isVisible: Boolean($json.footerText),\n          },\n        ],\n        msteams: {\n          entities: Array.isArray($json.teamsEntities) ? $json.teamsEntities : [],\n        },\n        \u0027$schema\u0027: \u0027http://adaptivecards.io/schemas/adaptive-card.json\u0027,\n        version: \u00271.0\u0027,\n      },\n    },\n  ],\n}) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       784,
+                                       48
+                                   ],
+                      "id":  "e8614695-a8e0-4471-9fb3-5dd4032aef0b",
+                      "name":  "Teams 업무관리(스크럽)에 보내기",
+                      "alwaysOutputData":  false,
+                      "executeOnce":  false,
+                      "notesInFlow":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const source = $input.first()?.json ?? {};\nconst now = new Date();\nconst parts = new Intl.DateTimeFormat(\u0027en-CA\u0027, {\n  timeZone: \u0027Asia/Seoul\u0027,\n  year: \u0027numeric\u0027,\n  month: \u00272-digit\u0027,\n  day: \u00272-digit\u0027,\n  weekday: \u0027short\u0027\n}).formatToParts(now);\n\nconst year = parts.find((p) =\u003e p.type === \u0027year\u0027)?.value;\nconst month = parts.find((p) =\u003e p.type === \u0027month\u0027)?.value;\nconst day = parts.find((p) =\u003e p.type === \u0027day\u0027)?.value;\nconst weekdayName = parts.find((p) =\u003e p.type === \u0027weekday\u0027)?.value;\n\nif (!year || !month || !day || !weekdayName) {\n  throw new Error(\u0027Failed to resolve current date in Asia/Seoul.\u0027);\n}\n\nconst todayInt = Number(`${year}${month}${day}`);\nconst todayDate = `${year}-${month}-${day}`;\nconst todayMMDD = `${month}${day}`;\nconst isWeekend = [\u0027Sat\u0027, \u0027Sun\u0027].includes(weekdayName);\n\nreturn [{\n  json: {\n    ...source,\n    Year: Number(year),\n    Month: Number(month),\n    Day: Number(day),\n    WeekdayName: weekdayName,\n    IsWeekend: isWeekend,\n    DefaultIsHoliday: isWeekend,\n    DefaultHolidayName: isWeekend ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027,\n    todayInt,\n    todayDate,\n    todayMMDD\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -332,
+                                       0
+                                   ],
+                      "id":  "14ca8017-1192-491a-ac33-ef18243dcffd",
+                      "name":  "Weekday Baseline",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "=DECLARE @d DATE = CAST(\u0027{{ $(\u0027Weekday Baseline\u0027).item.json.todayDate }}\u0027 AS date);\nSELECT\n    CONVERT(VARCHAR(8), @d, 112) AS check_date,\n    CAST(CASE WHEN EXISTS (\n        SELECT 1\n        FROM TsMgmt.dbo.HolidayCalendarKR\n        WHERE HolidayDate = @d\n    ) THEN 1 ELSE 0 END AS bit) AS found_in_db,\n    ISNULL((SELECT TOP 1 HolidayName FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS holiday_name,\n    ISNULL((SELECT TOP 1 SourceType FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS source_type,\n    ISNULL((SELECT TOP 1 SourceYear FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), 0) AS source_year;"
+                                     },
+                      "type":  "n8n-nodes-base.microsoftSql",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       -116,
+                                       0
+                                   ],
+                      "id":  "67174396-20a6-4901-90bb-8cec4dbbcceb",
+                      "name":  "Holiday DB Fallback",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "microsoftSql":  {
+                                                               "id":  "2dZb5OQPbTyO3052",
+                                                               "name":  "TsMgmt(DevTest_SQL2022_26)"
+                                                           }
+                                      }
+                  }
+              ],
+    "connections":  {
+                        "HTTP Request":  {
+                                             "main":  [
+                                                          [
+                                                              {
+                                                                  "node":  "Holiday DB Fallback",
+                                                                  "type":  "main",
+                                                                  "index":  0
+                                                              }
+                                                          ]
+                                                      ]
+                                         },
+                        "Code in JavaScript1":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "휴일체크",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "휴일체크":  {
+                                     "main":  [
+                                                  [
+                                                      {
+                                                          "node":  "Get many database pages",
+                                                          "type":  "main",
+                                                          "index":  0
+                                                      }
+                                                  ]
+                                              ]
+                                 },
+                        "Clean-DailyScrum":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "Weekday Baseline",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "Get many database pages":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Team용 휴가체크",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Weekday Baseline":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "HTTP Request",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "Holiday DB Fallback":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Code in JavaScript1",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Slack용 휴가체크":  {
+                                            "main":  [
+                                                         [
+                                                             {
+                                                                 "node":  "Send a message",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             }
+                                                         ]
+                                                     ]
+                                        },
+                        "Team용 휴가체크":  {
+                                           "main":  [
+                                                        [
+                                                            {
+                                                                "node":  "Teams 업무관리(스크럽)에 보내기",
+                                                                "type":  "main",
+                                                                "index":  0
+                                                            }
+                                                        ]
+                                                    ]
+                                       }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "callerPolicy":  "workflowsFromSameOwner",
+                     "availableInMCP":  false
+                 }
+}

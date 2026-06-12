@@ -1,0 +1,378 @@
+{
+    "name":  "Notion-In-Review-Inform",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "field":  "cronExpression",
+                                                                           "expression":  "0 0 7-16 * * 1-5"
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       -960,
+                                       -32
+                                   ],
+                      "id":  "209742bc-2097-2097-2097-209742b8209742b7",
+                      "name":  "Review Schedule",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const now = new Date();\nconst parts = new Intl.DateTimeFormat(\u0027en-CA\u0027, {\n  timeZone: \u0027Asia/Seoul\u0027,\n  year: \u0027numeric\u0027,\n  month: \u00272-digit\u0027,\n  day: \u00272-digit\u0027,\n  weekday: \u0027long\u0027,\n}).formatToParts(now);\nconst pick = (type) =\u003e parts.find((part) =\u003e part.type === type)?.value || \u0027\u0027;\nconst year = pick(\u0027year\u0027);\nconst month = pick(\u0027month\u0027);\nconst day = pick(\u0027day\u0027);\nconst weekdayEn = pick(\u0027weekday\u0027);\nconst weekdayMap = {\n  Monday: \u0027\\uC6D4\\uC694\\uC77C\u0027,\n  Tuesday: \u0027\\uD654\\uC694\\uC77C\u0027,\n  Wednesday: \u0027\\uC218\\uC694\\uC77C\u0027,\n  Thursday: \u0027\\uBAA9\\uC694\\uC77C\u0027,\n  Friday: \u0027\\uAE08\\uC694\\uC77C\u0027,\n  Saturday: \u0027\\uD1A0\\uC694\\uC77C\u0027,\n  Sunday: \u0027\\uC77C\\uC694\\uC77C\u0027,\n};\nconst isWeekend = weekdayEn === \u0027Saturday\u0027 || weekdayEn === \u0027Sunday\u0027;\nreturn [{\n  json: {\n    todayDate: `${year}-${month}-${day}`,\n    todayInt: `${year}${month}${day}`,\n    todayMMDD: `${month}${day}`,\n    WeekdayName: weekdayMap[weekdayEn] || weekdayEn,\n    IsWeekend: isWeekend,\n    DefaultIsHoliday: isWeekend,\n    DefaultHolidayName: isWeekend ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -720,
+                                       -32
+                                   ],
+                      "id":  "670f45f7-670f-670f-670f-670f45fb670f45fc",
+                      "name":  "Weekday Baseline",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "=DECLARE @d DATE = CAST(\u0027{{ $(\u0027Weekday Baseline\u0027).item.json.todayDate }}\u0027 AS date);\nSELECT\n    CONVERT(VARCHAR(8), @d, 112) AS check_date,\n    CAST(CASE WHEN EXISTS (\n        SELECT 1\n        FROM TsMgmt.dbo.HolidayCalendarKR\n        WHERE HolidayDate = @d\n    ) THEN 1 ELSE 0 END AS bit) AS found_in_db,\n    ISNULL((SELECT TOP 1 HolidayName FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS holiday_name,\n    ISNULL((SELECT TOP 1 SourceType FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS source_type,\n    ISNULL((SELECT TOP 1 SourceYear FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), 0) AS source_year;"
+                                     },
+                      "type":  "n8n-nodes-base.microsoftSql",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       -480,
+                                       -32
+                                   ],
+                      "id":  "71bb4240-71bb-71bb-71bb-71bb423c71bb423b",
+                      "name":  "Holiday DB Fallback",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "microsoftSql":  {
+                                                               "id":  "2dZb5OQPbTyO3052",
+                                                               "name":  "TsMgmt(DevTest_SQL2022_26)"
+                                                           }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const baseline = $(\u0027Weekday Baseline\u0027).first().json;\nconst dbPayload = $(\u0027Holiday DB Fallback\u0027).first()?.json ?? {};\nconst dbFound = !dbPayload.error \u0026\u0026 [true, 1, \u00271\u0027, \u0027true\u0027].includes(dbPayload.found_in_db);\n\nlet isHoliday = !!baseline.DefaultIsHoliday;\nlet holidayName = baseline.DefaultHolidayName || (isHoliday ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027);\nlet holidayLookupSource = isHoliday ? \u0027default-weekend\u0027 : \u0027default-weekday\u0027;\n\nif (dbFound) {\n  isHoliday = true;\n  holidayName = String(dbPayload.holiday_name || \u0027\\uACF5\\uD734\\uC77C\u0027);\n  holidayLookupSource = dbPayload.source_type ? `db:${dbPayload.source_type}` : \u0027db\u0027;\n}\n\nreturn [{\n  json: {\n    check_date: baseline.todayInt,\n    today_date: baseline.todayDate,\n    is_holiday: isHoliday,\n    holiday_name: holidayName,\n    is_weekend: !!baseline.IsWeekend,\n    weekday_name: baseline.WeekdayName,\n    holiday_lookup_source: holidayLookupSource,\n    db_error: dbPayload.error || \u0027\u0027,\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -240,
+                                       -32
+                                   ],
+                      "id":  "04fb1bb3-04fb-04fb-04fb-04fb1bb704fb1bb8",
+                      "name":  "Determine Holiday",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  2
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "52292f69-5229-5229-5229-52292f6d52292f6e",
+                                                                                   "leftValue":  "={{ $json.is_holiday }}",
+                                                                                   "rightValue":  false,
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "equals"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       0,
+                                       -32
+                                   ],
+                      "id":  "50e5f7a5-50e5-50e5-50e5-50e5f7a150e5f7a0",
+                      "name":  "Not Holiday",
+                      "alwaysOutputData":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "resource":  "databasePage",
+                                         "operation":  "getAll",
+                                         "databaseId":  {
+                                                            "__rl":  true,
+                                                            "value":  "205cb995-8309-80e4-ac2a-c8589a1783eb",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "TS Calendar DB",
+                                                            "cachedResultUrl":  "https://www.notion.so/205cb995830980e4ac2ac8589a1783eb"
+                                                        },
+                                         "options":  {
+                                                         "sort":  {
+                                                                      "sortValue":  [
+                                                                                        {
+                                                                                            "key":  "Date|date",
+                                                                                            "direction":  "descending"
+                                                                                        }
+                                                                                    ]
+                                                                  }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.notion",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       240,
+                                       -112
+                                   ],
+                      "id":  "160ba4fd-160b-160b-160b-160ba4f9160ba4f8",
+                      "name":  "Vacation Calendar",
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "notionApi":  {
+                                                            "id":  "LrLyYGhPvHMbPfZm",
+                                                            "name":  "tsupport API"
+                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "resource":  "databasePage",
+                                         "operation":  "getAll",
+                                         "databaseId":  {
+                                                            "__rl":  true,
+                                                            "value":  "77b2e35b-ab50-45cc-8314-e254a806229f",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "In Review Target DB",
+                                                            "cachedResultUrl":  "https://www.notion.so/vmssolutions/77b2e35bab5045cc8314e254a806229f?v=16fcb995830980e5a800000cfdbb881d"
+                                                        },
+                                         "options":  {
+                                                         "sort":  {
+                                                                      "sortValue":  [
+                                                                                        {
+                                                                                            "key":  "Status|status",
+                                                                                            "direction":  "ascending"
+                                                                                        }
+                                                                                    ]
+                                                                  }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.notion",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       480,
+                                       -112
+                                   ],
+                      "id":  "3df8308c-3df8-3df8-3df8-3df830903df83091",
+                      "name":  "In Review Pages",
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "notionApi":  {
+                                                            "id":  "LrLyYGhPvHMbPfZm",
+                                                            "name":  "tsupport API"
+                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const holiday = $(\u0027Determine Holiday\u0027).first()?.json ?? {};\nconst vacationItems = $(\u0027Vacation Calendar\u0027).all();\nconst notionItems = $(\u0027In Review Pages\u0027).all();\n\nconst targetUser = {\n  name: \u0027\\uAE40\\uC9C4\\uC6B1\u0027,\n  email: \u0027jwkim@vms-solutions.com\u0027,\n};\n\nfunction normalize(value) { return String(value ?? \"\").normalize(\"NFC\").replace(/\\s+/g, \"\").toLowerCase(); }\nfunction contains(value, keyword) { return normalize(value).includes(normalize(keyword)); }\nfunction compactText(value, max = 300) { const text = String(value ?? \"\").replace(/\\s+/g, \" \").trim(); return text.length \u003e max ? text.slice(0, max - 3) + \"...\" : text; }\n\nfunction collectStrings(value, out = [], depth = 0) {\n  if (depth \u003e 10 || value == null) return out;\n  if (typeof value === \"string\" || typeof value === \"number\" || typeof value === \"boolean\") { out.push(String(value)); return out; }\n  if (Array.isArray(value)) { for (const item of value) collectStrings(item, out, depth + 1); return out; }\n  if (typeof value === \"object\") { for (const nested of Object.values(value)) collectStrings(nested, out, depth + 1); }\n  return out;\n}\n\nfunction ymds(text) { return String(text ?? \"\").match(/\\d{4}-\\d{2}-\\d{2}/g) || []; }\nfunction ymd(text) { const match = String(text ?? \"\").match(/\\d{4}-\\d{2}-\\d{2}/); return match ? match[0] : \"\"; }\n\nfunction ranges(item) {\n  const found = [];\n  const uniq = new Set();\n  function push(label, start, end) {\n    const s = ymd(start);\n    const e = ymd(end || start);\n    if (!s) return;\n    const key = label + \"|\" + s + \"|\" + e;\n    if (uniq.has(key)) return;\n    uniq.add(key);\n    found.push({ start: s, end: e || s });\n  }\n  function walk(value, label, depth) {\n    if (depth \u003e 8 || value == null) return;\n    if (typeof value === \"string\") {\n      const items = ymds(value);\n      if (items.length === 1) push(label, items[0], items[0]);\n      if (items.length \u003e= 2) push(label, items[0], items[1]);\n      return;\n    }\n    if (typeof value === \"number\" || typeof value === \"boolean\") return;\n    if (Array.isArray(value)) { value.forEach((item, idx) =\u003e walk(item, label + \"[\" + idx + \"]\", depth + 1)); return; }\n    if (typeof value === \"object\") {\n      if (\"start\" in value \u0026\u0026 ymd(value.start)) push(label + \".start\", value.start, value.end || value.start);\n      if (\"date\" in value \u0026\u0026 value.date \u0026\u0026 typeof value.date === \"object\" \u0026\u0026 ymd(value.date.start)) push(label + \".date\", value.date.start, value.date.end || value.date.start);\n      if (\"property_date\" in value \u0026\u0026 value.property_date \u0026\u0026 typeof value.property_date === \"object\" \u0026\u0026 ymd(value.property_date.start)) push(label + \".property_date\", value.property_date.start, value.property_date.end || value.property_date.start);\n      if (\"formula\" in value \u0026\u0026 value.formula \u0026\u0026 typeof value.formula === \"object\" \u0026\u0026 value.formula.type === \"date\" \u0026\u0026 value.formula.date \u0026\u0026 ymd(value.formula.date.start)) push(label + \".formula.date\", value.formula.date.start, value.formula.date.end || value.formula.date.start);\n      for (const [key, nested] of Object.entries(value)) walk(nested, label + \".\" + key, depth + 1);\n    }\n  }\n  walk(item?.json ?? item, \"root\", 0);\n  return found;\n}\n\nfunction isAwayText(text) {\n  return [\u0027\\uD734\\uAC00\u0027,\u0027\\uC5F0\\uCC28\u0027,\u0027\\uBC18\\uCC28\u0027,\u0027\\uC624\\uC804\\uBC18\\uCC28\u0027,\u0027\\uC624\\uD6C4\\uBC18\\uCC28\u0027,\u0027\\uC548\\uC2DD\\uC6D4\u0027,\u0027\\uACF5\\uAC00\u0027,\u0027\\uACF5\\uD734\\uC77C\u0027,\u0027\\uD734\\uC77C\u0027,\u0027\\uCD9C\\uC7A5\u0027,\u0027vacation\u0027,\u0027leave\u0027,\u0027pto\u0027,\u0027dayoff\u0027,\u0027off\u0027,\u0027businesstrip\u0027].some((keyword) =\u003e contains(text, keyword));\n}\n\nfunction getStatus(page) {\n  const props = page?.properties || {};\n  for (const [key, value] of Object.entries(props)) {\n    if ((contains(key, \"status\") || contains(key, \"\\uC0C1\\uD0DC\")) \u0026\u0026 value?.type === \"status\") return String(value.status?.name || \"\");\n    if ((contains(key, \"status\") || contains(key, \"\\uC0C1\\uD0DC\")) \u0026\u0026 value?.type === \"select\") return String(value.select?.name || \"\");\n  }\n  for (const [key, value] of Object.entries(page || {})) {\n    if (contains(key, \"property_status\") || contains(key, \"status\")) {\n      if (typeof value === \"string\") return String(value);\n      if (value \u0026\u0026 typeof value === \"object\" \u0026\u0026 typeof value.name === \"string\") return String(value.name);\n    }\n  }\n  return \"\";\n}\n\nfunction getTitle(page) {\n  const props = page?.properties || {};\n  for (const value of Object.values(props)) {\n    if (value?.type === \"title\") {\n      return (value.title || []).map((item) =\u003e item?.plain_text || item?.text?.content || \"\").join(\"\").trim();\n    }\n  }\n  if (typeof page?.name === \"string\" \u0026\u0026 page.name.trim()) return page.name.trim();\n  if (typeof page?.property_task === \"string\" \u0026\u0026 page.property_task.trim()) return page.property_task.trim();\n  return String(page?.url || page?.id || \"\").trim();\n}\n\nconst today = String(holiday.today_date || new Intl.DateTimeFormat(\u0027sv-SE\u0027, { timeZone: \u0027Asia/Seoul\u0027 }).format(new Date()));\nconst vacationLookupFailed = vacationItems.some((item) =\u003e item?.json?.error);\nconst notionLookupFailed = notionItems.some((item) =\u003e item?.json?.error);\nconst errorMessages = [\n  holiday.db_error ? \"\\uACF5\\uD734\\uC77C DB \\uC870\\uD68C \\uC2E4\\uD328: \" + compactText(holiday.db_error) : \"\",\n  ...vacationItems.map((item) =\u003e item?.json?.error ? \"\\uD734\\uAC00 DB \\uC870\\uD68C \\uC2E4\\uD328: \" + compactText(item.json.error?.message || item.json.error?.description || item.json.error) : \"\").filter(Boolean),\n  ...notionItems.map((item) =\u003e item?.json?.error ? \"Notion DB \\uC870\\uD68C \\uC2E4\\uD328: \" + compactText(item.json.error?.message || item.json.error?.description || item.json.error) : \"\").filter(Boolean),\n].filter(Boolean);\nconst hasError = errorMessages.length \u003e 0;\nconst todayAwayItems = vacationLookupFailed ? [] : vacationItems.filter((item) =\u003e {\n  const text = collectStrings(item?.json ?? item).join(\" \");\n  if (!isAwayText(text)) return false;\n  const itemRanges = ranges(item);\n  return itemRanges.length \u003e 0 \u0026\u0026 itemRanges.some((range) =\u003e range.start \u003c= today \u0026\u0026 today \u003c= range.end);\n});\nconst targetAway = todayAwayItems.some((item) =\u003e {\n  const text = collectStrings(item?.json ?? item).join(\" \");\n  return contains(text, targetUser.name) || contains(text, targetUser.email);\n});\n\nconst pages = notionItems.map((item) =\u003e item?.json ?? {}).filter((page) =\u003e page \u0026\u0026 typeof page === \"object\" \u0026\u0026 !page.error);\nconst uniquePages = [];\nconst seenPageIds = new Set();\nfor (const page of pages) {\n  const key = String(page?.id || page?.url || getTitle(page) || \"\").trim();\n  if (!key || seenPageIds.has(key)) continue;\n  seenPageIds.add(key);\n  uniquePages.push(page);\n}\nconst inReviewPages = uniquePages.filter((page) =\u003e getStatus(page) === \"In Review\");\nconst shouldSendReview = !hasError \u0026\u0026 !holiday.is_holiday \u0026\u0026 !targetAway \u0026\u0026 inReviewPages.length \u003e 0;\nconst shouldSendError = hasError;\nconst shouldSend = shouldSendError || shouldSendReview;\n\nconst teamsEntities = shouldSend\n  ? [{ type: \"mention\", text: \"\u003cat\u003e\" + targetUser.name + \"\u003c/at\u003e\", mentioned: { id: targetUser.email, name: targetUser.name } }]\n  : [];\n\nconst reviewTitleText = \"\u003cat\u003e\" + targetUser.name + \"\u003c/at\u003e \\uB2D8, In Review \\uC0C1\\uD0DC \\uD56D\\uBAA9\\uC774 \\uC788\\uC2B5\\uB2C8\\uB2E4.\";\nconst errorTitleText = \"\u003cat\u003e\" + targetUser.name + \"\u003c/at\u003e \\uB2D8, Notion-In-Review-Inform \\uC2E4\\uD589 \\uC624\\uB958\\uAC00 \\uBC1C\\uC0DD\\uD588\\uC2B5\\uB2C8\\uB2E4.\";\nconst checkedAt = new Intl.DateTimeFormat(\u0027en-CA\u0027, { timeZone: \u0027Asia/Seoul\u0027, year: \u0027numeric\u0027, month: \u00272-digit\u0027, day: \u00272-digit\u0027, hour: \u00272-digit\u0027, minute: \u00272-digit\u0027, second: \u00272-digit\u0027, hour12: false }).formatToParts(new Date());\nconst pick = (type) =\u003e checkedAt.find((part) =\u003e part.type === type)?.value || \u0027\u0027;\nconst checkedAtText = pick(\u0027year\u0027) + \u0027-\u0027 + pick(\u0027month\u0027) + \u0027-\u0027 + pick(\u0027day\u0027) + \u0027 \u0027 + pick(\u0027hour\u0027) + \u0027:\u0027 + pick(\u0027minute\u0027) + \u0027:\u0027 + pick(\u0027second\u0027) + \u0027 KST\u0027;\n\nconst body = shouldSendError ? [\n  { type: \"TextBlock\", text: errorTitleText, weight: \"Bolder\", size: \"Medium\", wrap: true },\n  { type: \"FactSet\", facts: [\n    { title: \u0027\\uD655\\uC778 \\uC2DC\\uAC01\u0027, value: checkedAtText },\n  ] },\n  ...errorMessages.map((message) =\u003e ({ type: \"TextBlock\", text: \"- \" + message, wrap: true, spacing: \"Small\", color: \"Attention\" })),\n] : (shouldSendReview ? [\n  { type: \"TextBlock\", text: reviewTitleText, weight: \"Bolder\", size: \"Medium\", wrap: true },\n  { type: \"FactSet\", facts: [\n    { title: \u0027\\uAC74\\uC218\u0027, value: String(inReviewPages.length) + \u0027\\uAC74\u0027 },\n    { title: \u0027\\uD655\\uC778 \\uC2DC\\uAC01\u0027, value: checkedAtText },\n  ] },\n  ...inReviewPages.map((page) =\u003e ({\n    type: \"TextBlock\",\n    text: \"- [\" + getTitle(page) + \"](\" + String(page.url || TARGET_DATABASE_URL) + \")\",\n    wrap: true,\n    spacing: \"Small\",\n  })),\n] : []);\n\nreturn [{\n  json: {\n    alertCount: shouldSend ? (shouldSendError ? 1 : inReviewPages.length) : 0,\n    alertMode: shouldSendError ? \"error\" : (shouldSendReview ? \"review\" : \"none\"),\n    teamsEntities,\n    alertCardBody: body,\n    debug: {\n      targetAway,\n      vacationLookupFailed,\n      notionLookupFailed,\n      inReviewCount: inReviewPages.length,\n      isHoliday: !!holiday.is_holiday,\n      hasError,\n    }\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       720,
+                                       -112
+                                   ],
+                      "id":  "362736d3-3627-3627-3627-362736cf362736ce",
+                      "name":  "Build Teams Payload",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  2
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "30f79c2a-30f7-30f7-30f7-30f79c2e30f79c2f",
+                                                                                   "leftValue":  "={{ $json.alertCount \u003e 0 }}",
+                                                                                   "rightValue":  true,
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "equals"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       960,
+                                       -112
+                                   ],
+                      "id":  "0504425c-0504-0504-0504-0504426005044261",
+                      "name":  "Should Send Alert"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://redacted.invalid/powerautomate/webhook",
+                                         "sendBody":  true,
+                                         "contentType":  "json",
+                                         "specifyBody":  "json",
+                                         "bodyParameters":  {
+                                                                "parameters":  [
+                                                                                   {
+
+                                                                                   }
+                                                                               ]
+                                                            },
+                                         "jsonBody":  "={{ ({ type: \u0027message\u0027, attachments: [{ contentType: \u0027application/vnd.microsoft.card.adaptive\u0027, content: { type: \u0027AdaptiveCard\u0027, body: Array.isArray($json.alertCardBody) ? $json.alertCardBody : [], msteams: { entities: Array.isArray($json.teamsEntities) ? $json.teamsEntities : [] }, \u0027$schema\u0027: \u0027http://adaptivecards.io/schemas/adaptive-card.json\u0027, version: \u00271.4\u0027 } }] }) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       1200,
+                                       -112
+                                   ],
+                      "id":  "360c91cb-360c-360c-360c-360c91c7360c91c6",
+                      "name":  "Alert Teams Webhook",
+                      "alwaysOutputData":  false
+                  }
+              ],
+    "connections":  {
+                        "Review Schedule":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Weekday Baseline",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Weekday Baseline":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "Holiday DB Fallback",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "Holiday DB Fallback":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Determine Holiday",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Determine Holiday":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "Not Holiday",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ]
+                                                           ]
+                                              },
+                        "Not Holiday":  {
+                                            "main":  [
+                                                         [
+                                                             {
+                                                                 "node":  "Vacation Calendar",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             }
+                                                         ],
+                                                         [
+
+                                                         ]
+                                                     ]
+                                        },
+                        "Vacation Calendar":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "In Review Pages",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ]
+                                                           ]
+                                              },
+                        "In Review Pages":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Build Teams Payload",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Build Teams Payload":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Should Send Alert",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Should Send Alert":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "Alert Teams Webhook",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ],
+                                                               [
+
+                                                               ]
+                                                           ]
+                                              }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "callerPolicy":  "workflowsFromSameOwner",
+                     "availableInMCP":  false
+                 }
+}

@@ -1,0 +1,377 @@
+{
+    "name":  "TS-IssueCheck(08,16)",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "url":  "=http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?solYear={{ $json[\u0027Year\u0027] }}\u0026numOfRows=50\u0026ServiceKey=ea205130648aa0e11f1cc778bef29d18ef68b212e587c5590792dbd4f0a6b5c0",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       -432,
+                                       32
+                                   ],
+                      "id":  "7fcccbe8-e822-4c1d-822a-54276cd1718f",
+                      "name":  "HTTP Request",
+                      "alwaysOutputData":  true,
+                      "onError":  "continueRegularOutput"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const recurringHolidays = [\n  { date: \u00270501\u0027, dateName: \u0027\\uADFC\\uB85C\\uC790\\uC758 \\uB0A0\u0027 },\n  { date: \u00271231\u0027, dateName: \u0027\\uCC3D\\uB9BD\\uAE30\\uB150\\uC77C\\uB300\\uD734\u0027 }\n];\n\nconst baseline = $(\u0027Weekday Baseline\u0027).first().json;\nconst apiPayload = $(\u0027HTTP Request\u0027).first()?.json ?? {};\nconst dbPayload = $(\u0027Holiday DB Fallback\u0027).first()?.json ?? {};\n\nfunction normalizeApiItems(raw) {\n  if (!raw) return [];\n  return Array.isArray(raw) ? raw : [raw];\n}\n\nconst apiItems = !apiPayload.error\n  ? normalizeApiItems(apiPayload.response?.body?.items?.item)\n  : [];\nconst apiMatch = apiItems.find((item) =\u003e String(item?.locdate ?? \u0027\u0027) === String(baseline.todayInt));\nconst customMatch = recurringHolidays.find((item) =\u003e item.date === baseline.todayMMDD);\nconst dbFound = !dbPayload.error \u0026\u0026 [true, 1, \u00271\u0027, \u0027true\u0027].includes(dbPayload.found_in_db);\n\nlet isHoliday = !!baseline.DefaultIsHoliday;\nlet holidayName = baseline.DefaultHolidayName || (isHoliday ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027);\nlet holidayLookupSource = isHoliday ? \u0027default-weekend\u0027 : \u0027default-weekday\u0027;\n\nif (apiMatch) {\n  isHoliday = true;\n  holidayName = String(apiMatch.dateName || \u0027\\uACF5\\uD734\\uC77C\u0027);\n  holidayLookupSource = \u0027api\u0027;\n} else if (customMatch) {\n  isHoliday = true;\n  holidayName = customMatch.dateName;\n  holidayLookupSource = \u0027custom\u0027;\n} else if (dbFound) {\n  isHoliday = true;\n  holidayName = String(dbPayload.holiday_name || \u0027\\uACF5\\uD734\\uC77C\u0027);\n  holidayLookupSource = dbPayload.source_type ? `db:${dbPayload.source_type}` : \u0027db\u0027;\n}\n\nreturn [{\n  json: {\n    check_date: baseline.todayInt,\n    is_holiday: isHoliday,\n    holiday_name: holidayName,\n    is_weekend: !!baseline.IsWeekend,\n    weekday_name: baseline.WeekdayName,\n    holiday_lookup_source: holidayLookupSource,\n    holiday_lookup_failed: Boolean(apiPayload.error) \u0026\u0026 Boolean(dbPayload.error),\n    api_error: apiPayload.error?.message || apiPayload.error || \u0027\u0027,\n    db_error: dbPayload.error || \u0027\u0027\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -144,
+                                       32
+                                   ],
+                      "id":  "a7f48063-ef31-405d-ae06-54fe0e56df7f",
+                      "name":  "Code in JavaScript1",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  2
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "94cc5a32-5c4b-4b17-8643-a09701554119",
+                                                                                   "leftValue":  "={{ $json.is_holiday }}",
+                                                                                   "rightValue":  false,
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "equals"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       16,
+                                       -336
+                                   ],
+                      "id":  "92eb0a3b-2552-4f0c-8cbd-c9bf3d41aa26",
+                      "name":  "휴일체크",
+                      "alwaysOutputData":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "field":  "weeks",
+                                                                           "triggerAtDay":  [
+                                                                                                1,
+                                                                                                2,
+                                                                                                3,
+                                                                                                4,
+                                                                                                5
+                                                                                            ],
+                                                                           "triggerAtHour":  8
+                                                                       },
+                                                                       {
+                                                                           "field":  "weeks",
+                                                                           "triggerAtDay":  [
+                                                                                                1,
+                                                                                                2,
+                                                                                                3,
+                                                                                                4,
+                                                                                                5
+                                                                                            ],
+                                                                           "triggerAtHour":  16
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       -704,
+                                       -336
+                                   ],
+                      "id":  "46a0ec6b-1469-4ce2-937d-a8f1b37dc06c",
+                      "name":  "IssueCheck",
+                      "alwaysOutputData":  true,
+                      "retryOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://redacted.invalid/powerautomate/webhook",
+                                         "sendBody":  true,
+                                         "contentType":  "=json",
+                                         "specifyBody":  "json",
+                                         "bodyParameters":  {
+                                                                "parameters":  [
+                                                                                   {
+
+                                                                                   }
+                                                                               ]
+                                                            },
+                                         "jsonBody":  "={\n  \"type\": \"message\",\n  \"summary\": \"{{ $json.summaryText }}\",\n  \"text\": \"{{ $json.summaryText }}\",\n  \"attachments\": [\n    {\n      \"contentType\": \"application/vnd.microsoft.card.adaptive\",\n      \"content\": {\n        \"type\": \"AdaptiveCard\",\n        \"body\": [\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"{{ $json.cardTitle }}\",\n            \"weight\": \"Bolder\",\n            \"size\": \"Medium\",\n            \"wrap\": true\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"{{ $json.cardIntro }}\",\n            \"wrap\": true,\n            \"spacing\": \"Medium\"\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": {{ JSON.stringify($json.cardDetails) }},\n            \"wrap\": true,\n            \"spacing\": \"Medium\",\n            \"isVisible\": {{ $json.issueCount \u003e 0 }}\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"{{ $json.cardFooter }}\",\n            \"wrap\": true,\n            \"weight\": \"Bolder\",\n            \"color\": \"{{ $json.cardFooterColor }}\",\n            \"isVisible\": {{ $json.issueCount \u003e 0 }}\n          }\n        ],\n        \"msteams\": {\n          \"entities\": {{ JSON.stringify($json.teamsEntities) }}\n        },\n        \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n        \"version\": \"1.2\"\n      }\n    }\n  ]\n}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.3,
+                      "position":  [
+                                       448,
+                                       -208
+                                   ],
+                      "id":  "de4de05f-2cda-45fb-9de2-98272d353aec",
+                      "name":  "3.이슈등록관리에 메세지",
+                      "alwaysOutputData":  false,
+                      "executeOnce":  false,
+                      "notesInFlow":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "resource":  "databasePage",
+                                         "operation":  "getAll",
+                                         "databaseId":  {
+                                                            "__rl":  true,
+                                                            "value":  "1dba9ff0-26de-49e0-bb69-e55b6506b36b",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "연구소 백로그",
+                                                            "cachedResultUrl":  "https://www.notion.so/1dba9ff026de49e0bb69e55b6506b36b"
+                                                        },
+                                         "limit":  10,
+                                         "simple":  false,
+                                         "options":  {
+                                                         "sort":  {
+                                                                      "sortValue":  [
+                                                                                        {
+                                                                                            "timestamp":  true,
+                                                                                            "key":  "created_time",
+                                                                                            "direction":  "descending"
+                                                                                        }
+                                                                                    ]
+                                                                  }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.notion",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       -560,
+                                       -336
+                                   ],
+                      "id":  "cb0918e4-b1fc-49b9-9ce4-ae0f4056a6b8",
+                      "name":  "연구소백로그 최신목록조회",
+                      "credentials":  {
+                                          "notionApi":  {
+                                                            "id":  "LrLyYGhPvHMbPfZm",
+                                                            "name":  "tsupport API"
+                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "// 1. 소스 노드에서 직접 가져오기\nconst issueItems = $(\"연구소백로그 최신목록조회\").all();\nconst vacationItems = $(\"기술지원캘린더\").all();\n\n// 2. 날짜/문자열 기본 유틸\nconst now = new Date();\n\n// 한국 시간 기준 날짜/시간\nconst todayKST = new Intl.DateTimeFormat(\"sv-SE\", {\n  timeZone: \"Asia/Seoul\"\n}).format(now);\n\nconst hourKST = new Intl.DateTimeFormat(\"en-GB\", {\n  timeZone: \"Asia/Seoul\",\n  hour: \"2-digit\",\n  hour12: false\n}).format(now);\n\nconst dateString = new Intl.DateTimeFormat(\"ko-KR\", {\n  timeZone: \"Asia/Seoul\",\n  year: \"numeric\",\n  month: \"long\",\n  day: \"numeric\"\n}).format(now);\n\n// 예: 2026-04-28 08시 체크\nconst checkLabel = `${todayKST} ${hourKST}시 체크`;\n\nconst cleanStr = (str) =\u003e (str ?? \"\").toString().normalize(\"NFC\").trim();\nconst norm = (str) =\u003e cleanStr(str).replace(/\\s+/g, \"\").toLowerCase();\n\n// 3. 전체 대상자 명단\nconst allUsers = [\n  { name: \"조현재\", slackId: \"U07K2APTEVD\", email: \"jyi30@vms-solutions.com\" },\n  { name: \"김민영\", slackId: \"U07EEDTJZQE\", email: \"mykim@vms-solutions.com\" },\n  { name: \"김진욱\", slackId: \"U05DQA2L7JT\", email: \"jwkim@vms-solutions.com\" }\n];\n\n// 4. 공통 유틸\nfunction findPropertyKey(props, exactName, partialName) {\n  if (!props || typeof props !== \"object\") return null;\n\n  if (props[exactName]) return exactName;\n\n  const exactNormalized = Object.keys(props).find(\n    k =\u003e norm(k) === norm(exactName)\n  );\n  if (exactNormalized) return exactNormalized;\n\n  const partialNormalized = Object.keys(props).find(\n    k =\u003e norm(k).includes(norm(partialName))\n  );\n\n  return partialNormalized || null;\n}\n\nfunction notionPropToString(prop) {\n  if (!prop || typeof prop !== \"object\") return \"\";\n\n  switch (prop.type) {\n    case \"status\":\n      return cleanStr(prop.status?.name);\n\n    case \"select\":\n      return cleanStr(prop.select?.name);\n\n    case \"title\":\n      return cleanStr(\n        (prop.title || []).map(t =\u003e t.plain_text || t.text?.content || \"\").join(\"\")\n      );\n\n    case \"rich_text\":\n      return cleanStr(\n        (prop.rich_text || []).map(t =\u003e t.plain_text || t.text?.content || \"\").join(\"\")\n      );\n\n    case \"people\":\n      return cleanStr(\n        (prop.people || []).map(p =\u003e p.name || p.person?.email || \"\").join(\", \")\n      );\n\n    case \"date\":\n      return cleanStr(prop.date?.start);\n\n    case \"checkbox\":\n      return String(!!prop.checkbox);\n\n    case \"number\":\n      return prop.number == null ? \"\" : String(prop.number);\n\n    case \"formula\":\n      if (!prop.formula) return \"\";\n\n      if (prop.formula.type === \"string\") return cleanStr(prop.formula.string);\n      if (prop.formula.type === \"number\") return prop.formula.number == null ? \"\" : String(prop.formula.number);\n      if (prop.formula.type === \"boolean\") return String(!!prop.formula.boolean);\n      if (prop.formula.type === \"date\") return cleanStr(prop.formula.date?.start);\n\n      return \"\";\n\n    default:\n      return \"\";\n  }\n}\n\nfunction flatValueToString(value) {\n  if (value == null) return \"\";\n\n  if (\n    typeof value === \"string\" ||\n    typeof value === \"number\" ||\n    typeof value === \"boolean\"\n  ) {\n    return cleanStr(value);\n  }\n\n  if (Array.isArray(value)) {\n    return cleanStr(\n      value.map(v =\u003e flatValueToString(v)).filter(Boolean).join(\", \")\n    );\n  }\n\n  if (typeof value === \"object\") {\n    if (\"name\" in value) return cleanStr(value.name);\n    if (\"plain_text\" in value) return cleanStr(value.plain_text);\n    if (\"start\" in value) return cleanStr(value.start);\n    if (\"end\" in value) return cleanStr(value.end);\n  }\n\n  return \"\";\n}\n\nfunction getFieldValue(page, candidateNames) {\n  // A. 원본 Notion API 구조\n  if (page.properties \u0026\u0026 typeof page.properties === \"object\") {\n    for (const name of candidateNames) {\n      const propKey = findPropertyKey(page.properties, name, name);\n      if (propKey) {\n        const v = notionPropToString(page.properties[propKey]);\n        if (v) return v;\n      }\n    }\n  }\n\n  // B. 평탄화된 구조\n  for (const name of candidateNames) {\n    const flatKey = findPropertyKey(page, name, name);\n    if (flatKey) {\n      const v = flatValueToString(page[flatKey]);\n      if (v) return v;\n    }\n  }\n\n  return \"\";\n}\n\nfunction getStatus(page) {\n  return getFieldValue(page, [\"상태\", \"Status\"]);\n}\n\nfunction getIssueType(page) {\n  return getFieldValue(page, [\"이슈 타입\", \"Issue Type\", \"Type\"]);\n}\n\nfunction getTitle(page) {\n  return getFieldValue(page, [\"업무 이름\", \"Name\", \"title\", \"제목\"]);\n}\n\nfunction getUrl(page) {\n  return cleanStr(page.url || page.URL || page.public_url || \"\");\n}\n\n// 5. 휴가 일정 관련 유틸\nfunction collectStrings(value, result = [], depth = 0) {\n  if (depth \u003e 10 || value == null) return result;\n\n  if (\n    typeof value === \"string\" ||\n    typeof value === \"number\" ||\n    typeof value === \"boolean\"\n  ) {\n    result.push(String(value));\n    return result;\n  }\n\n  if (Array.isArray(value)) {\n    for (const v of value) {\n      collectStrings(v, result, depth + 1);\n    }\n    return result;\n  }\n\n  if (typeof value === \"object\") {\n    for (const v of Object.values(value)) {\n      collectStrings(v, result, depth + 1);\n    }\n  }\n\n  return result;\n}\n\nfunction itemToSearchText(item) {\n  return collectStrings(item?.json ?? item).join(\" \");\n}\n\nfunction isVacationText(text) {\n  const t = norm(text);\n\n  return [\n    \"휴가\",\n    \"연차\",\n    \"반차\",\n    \"오전반차\",\n    \"오후반차\",\n    \"공가\",\n    \"휴무\",\n    \"휴일\",\n    \"공휴일\",\n    \"명절\",\n    \"안식월\",\n    \"sabbatical\",\n    \"leave\",\n    \"vacation\",\n    \"pto\",\n    \"dayoff\",\n    \"off\"\n  ].some(keyword =\u003e t.includes(norm(keyword)));\n}\n\nfunction extractAllYmds(text) {\n  return String(text ?? \"\").match(/\\d{4}-\\d{2}-\\d{2}/g) || [];\n}\n\nfunction extractYmd(str) {\n  const m = String(str ?? \"\").match(/\\d{4}-\\d{2}-\\d{2}/);\n  return m ? m[0] : \"\";\n}\n\nfunction extractDateRanges(item) {\n  const obj = item?.json ?? item;\n  const ranges = [];\n  const seen = new Set();\n\n  function pushRange(key, start, end) {\n    const s = extractYmd(start);\n    const e = extractYmd(end || start);\n    if (!s) return;\n\n    const uniq = `${key}|${s}|${e}`;\n    if (seen.has(uniq)) return;\n    seen.add(uniq);\n\n    ranges.push({\n      key,\n      start: s,\n      end: e || s\n    });\n  }\n\n  function walk(value, path = \"root\", depth = 0) {\n    if (depth \u003e 8 || value == null) return;\n\n    if (typeof value === \"string\") {\n      const ymds = extractAllYmds(value);\n      if (ymds.length === 1) {\n        pushRange(path, ymds[0], ymds[0]);\n      } else if (ymds.length \u003e= 2) {\n        pushRange(path, ymds[0], ymds[1]);\n      }\n      return;\n    }\n\n    if (typeof value === \"number\" || typeof value === \"boolean\") {\n      return;\n    }\n\n    if (Array.isArray(value)) {\n      value.forEach((v, idx) =\u003e walk(v, `${path}[${idx}]`, depth + 1));\n      return;\n    }\n\n    if (typeof value === \"object\") {\n      if (\"start\" in value \u0026\u0026 extractYmd(value.start)) {\n        pushRange(`${path}.startEnd`, value.start, value.end || value.start);\n      }\n\n      if (\"date\" in value \u0026\u0026 value.date \u0026\u0026 typeof value.date === \"object\" \u0026\u0026 extractYmd(value.date.start)) {\n        pushRange(`${path}.date`, value.date.start, value.date.end || value.date.start);\n      }\n\n      if (\n        \"formula\" in value \u0026\u0026\n        value.formula \u0026\u0026\n        typeof value.formula === \"object\" \u0026\u0026\n        value.formula.type === \"date\" \u0026\u0026\n        value.formula.date \u0026\u0026\n        extractYmd(value.formula.date.start)\n      ) {\n        pushRange(`${path}.formula.date`, value.formula.date.start, value.formula.date.end || value.formula.date.start);\n      }\n\n      for (const [k, v] of Object.entries(value)) {\n        walk(v, `${path}.${k}`, depth + 1);\n      }\n    }\n  }\n\n  walk(obj);\n\n  return ranges;\n}\n\nfunction isTodayIncluded(start, end, today) {\n  if (!start) return false;\n  const realEnd = end || start;\n  return start \u003c= today \u0026\u0026 today \u003c= realEnd;\n}\n\n// 6. 오늘 날짜가 포함된 휴가/안식월 일정만 추출\nconst todayVacationItems = vacationItems.filter(item =\u003e {\n  const text = itemToSearchText(item);\n\n  if (!isVacationText(text)) return false;\n\n  const ranges = extractDateRanges(item);\n  if (ranges.length === 0) return false;\n\n  return ranges.some(r =\u003e isTodayIncluded(r.start, r.end, todayKST));\n});\n\n// 7. 오늘 휴가/안식월인 사용자 추출\nconst vacationUsers = allUsers.filter(user =\u003e {\n  return todayVacationItems.some(item =\u003e {\n    const text = itemToSearchText(item);\n\n    return (\n      norm(text).includes(norm(user.name)) ||\n      norm(text).includes(norm(user.email))\n    );\n  });\n});\n\nconst vacationUserEmails = new Set(vacationUsers.map(u =\u003e u.email));\nconst activeUsers = allUsers.filter(u =\u003e !vacationUserEmails.has(u.email));\n\n// 8. 이슈 목록\nconst pages = issueItems\n  .map(item =\u003e item?.json)\n  .filter(page =\u003e\n    page \u0026\u0026\n    typeof page === \"object\" \u0026\u0026\n    page.properties \u0026\u0026\n    typeof page.properties === \"object\"\n  );\n\nconst targetIssues = pages.filter(page =\u003e {\n  const statusName = getStatus(page);\n  const typeName = getIssueType(page);\n\n  const isRegistered = norm(statusName) === norm(\"등록\");\n  const isTargetType = [\"제안\", \"버그\", \"문의\"].some(\n    t =\u003e norm(typeName) === norm(t)\n  );\n\n  return isRegistered \u0026\u0026 isTargetType;\n});\n\n// 9. 메시지용 텍스트 생성\nconst activeUserNames = activeUsers.map(u =\u003e u.name).join(\", \");\nconst activeUserMentionText = activeUsers.map(u =\u003e `\u003cat\u003e${u.name}\u003c/at\u003e`).join(\", \");\nconst activeUserEntities = activeUsers.map(u =\u003e ({\n  type: \"mention\",\n  text: `\u003cat\u003e${u.name}\u003c/at\u003e`,\n  mentioned: { id: u.email, name: u.name }\n}));\n\nlet teamsText = \"\";\nlet teamsEntities = [];\nlet issuesContent = \"\";\n\nlet cardTitle = \"\";\nlet cardIntro = \"\";\nlet cardDetails = \"\";\nlet cardFooter = \"\";\nlet cardFooterColor = \"Default\";\n\n// 모바일/요약용 텍스트(멘션 태그 없이)\nlet summaryText = \"\";\n\nif (targetIssues.length === 0) {\n  teamsText = \"\";\n  teamsEntities = [];\n  issuesContent = \"\";\n\n  cardTitle = `${checkLabel} - 이슈 없음`;\n  cardIntro = \"현재 확인이 필요한 이슈가 없습니다.\";\n  cardDetails = \"\";\n  cardFooter = \"\";\n  cardFooterColor = \"Good\";\n\n  summaryText = `${checkLabel} - 이슈 없음`;\n} else {\n  teamsText = activeUserMentionText;\n  teamsEntities = activeUserEntities;\n\n  const issuesList = targetIssues.map((page) =\u003e {\n    const title = getTitle(page) || \"제목 없음\";\n    const type = getIssueType(page) || \"유형 없음\";\n    return `[${type}] ${title}`;\n  });\n\n  issuesContent = issuesList.join(\"\\n\");\n\n  // 제목은 짧게\n  if (activeUsers.length \u003e 0) {\n    cardTitle = `${checkLabel} - ${teamsText} ${targetIssues.length}건`;\n    summaryText = `${checkLabel} - ${activeUserNames} ${targetIssues.length}건`;\n  } else {\n    cardTitle = `${checkLabel} - 확인 ${targetIssues.length}건`;\n    summaryText = `${checkLabel} - 확인 ${targetIssues.length}건`;\n  }\n\n  cardIntro = `[${dateString}] 확인이 필요한 이슈가 ${targetIssues.length}건 있습니다.`;\n  cardDetails = issuesContent;\n  cardFooter = \"내용 확인 후 검토 부탁드립니다! 🚀\";\n  cardFooterColor = \"Attention\";\n}\n\n// 10. 반환\nreturn [{\n  json: {\n    teamsText,\n    teamsEntities,\n    issuesContent,\n    issueCount: targetIssues.length,\n    date: dateString,\n    checkLabel,\n    cardTitle,\n    cardIntro,\n    cardDetails,\n    cardFooter,\n    cardFooterColor,\n    summaryText,\n    debug: {\n      todayKST,\n      hourKST,\n      checkLabel,\n      issueSourceCount: issueItems.length,\n      vacationSourceCount: vacationItems.length,\n      todayVacationCount: todayVacationItems.length,\n      vacationUsers: vacationUsers.map(u =\u003e ({\n        name: u.name,\n        email: u.email\n      })),\n      activeUsers: activeUsers.map(u =\u003e ({\n        name: u.name,\n        email: u.email\n      })),\n      matchedTitles: targetIssues.map(page =\u003e getTitle(page)),\n      sampleStatusType: pages.slice(0, 5).map(page =\u003e ({\n        title: getTitle(page),\n        status: getStatus(page),\n        type: getIssueType(page)\n      }))\n    }\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       304,
+                                       -208
+                                   ],
+                      "id":  "0f2ec93d-95b0-4837-aaff-655a7688071d",
+                      "name":  "Team용 알림메세지 생성",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "resource":  "databasePage",
+                                         "operation":  "getAll",
+                                         "databaseId":  {
+                                                            "__rl":  true,
+                                                            "value":  "205cb995-8309-80e4-ac2a-c8589a1783eb",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "기술지원캘린더DB",
+                                                            "cachedResultUrl":  "https://www.notion.so/205cb995830980e4ac2ac8589a1783eb"
+                                                        },
+                                         "options":  {
+                                                         "sort":  {
+                                                                      "sortValue":  [
+                                                                                        {
+                                                                                            "key":  "Date|date",
+                                                                                            "direction":  "descending"
+                                                                                        }
+                                                                                    ]
+                                                                  }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.notion",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       192,
+                                       -464
+                                   ],
+                      "id":  "643455c4-46e2-4e3c-9644-3e696766e8f0",
+                      "name":  "기술지원캘린더",
+                      "credentials":  {
+                                          "notionApi":  {
+                                                            "id":  "LrLyYGhPvHMbPfZm",
+                                                            "name":  "tsupport API"
+                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const source = $input.first()?.json ?? {};\nconst now = new Date();\nconst parts = new Intl.DateTimeFormat(\u0027en-CA\u0027, {\n  timeZone: \u0027Asia/Seoul\u0027,\n  year: \u0027numeric\u0027,\n  month: \u00272-digit\u0027,\n  day: \u00272-digit\u0027,\n  weekday: \u0027short\u0027\n}).formatToParts(now);\n\nconst year = parts.find((p) =\u003e p.type === \u0027year\u0027)?.value;\nconst month = parts.find((p) =\u003e p.type === \u0027month\u0027)?.value;\nconst day = parts.find((p) =\u003e p.type === \u0027day\u0027)?.value;\nconst weekdayName = parts.find((p) =\u003e p.type === \u0027weekday\u0027)?.value;\n\nif (!year || !month || !day || !weekdayName) {\n  throw new Error(\u0027Failed to resolve current date in Asia/Seoul.\u0027);\n}\n\nconst todayInt = Number(`${year}${month}${day}`);\nconst todayDate = `${year}-${month}-${day}`;\nconst todayMMDD = `${month}${day}`;\nconst isWeekend = [\u0027Sat\u0027, \u0027Sun\u0027].includes(weekdayName);\n\nreturn [{\n  json: {\n    ...source,\n    Year: Number(year),\n    Month: Number(month),\n    Day: Number(day),\n    WeekdayName: weekdayName,\n    IsWeekend: isWeekend,\n    DefaultIsHoliday: isWeekend,\n    DefaultHolidayName: isWeekend ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027,\n    todayInt,\n    todayDate,\n    todayMMDD\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -432,
+                                       -336
+                                   ],
+                      "id":  "99792ad2-d72e-4ca7-8ed8-83f28c5c51ec",
+                      "name":  "Weekday Baseline",
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "=DECLARE @d DATE = CAST(\u0027{{ $(\u0027Weekday Baseline\u0027).item.json.todayDate }}\u0027 AS date);\nSELECT\n    CONVERT(VARCHAR(8), @d, 112) AS check_date,\n    CAST(CASE WHEN EXISTS (\n        SELECT 1\n        FROM TsMgmt.dbo.HolidayCalendarKR\n        WHERE HolidayDate = @d\n    ) THEN 1 ELSE 0 END AS bit) AS found_in_db,\n    ISNULL((SELECT TOP 1 HolidayName FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS holiday_name,\n    ISNULL((SELECT TOP 1 SourceType FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS source_type,\n    ISNULL((SELECT TOP 1 SourceYear FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), 0) AS source_year;"
+                                     },
+                      "type":  "n8n-nodes-base.microsoftSql",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       -304,
+                                       32
+                                   ],
+                      "id":  "c9788ecf-1f5d-4b8c-92f9-b3fd270cd1fa",
+                      "name":  "Holiday DB Fallback",
+                      "alwaysOutputData":  true,
+                      "credentials":  {
+                                          "microsoftSql":  {
+                                                               "id":  "2dZb5OQPbTyO3052",
+                                                               "name":  "TsMgmt(DevTest_SQL2022_26)"
+                                                           }
+                                      },
+                      "onError":  "continueRegularOutput"
+                  }
+              ],
+    "connections":  {
+                        "HTTP Request":  {
+                                             "main":  [
+                                                          [
+                                                              {
+                                                                  "node":  "Holiday DB Fallback",
+                                                                  "type":  "main",
+                                                                  "index":  0
+                                                              }
+                                                          ]
+                                                      ]
+                                         },
+                        "Code in JavaScript1":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "휴일체크",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "휴일체크":  {
+                                     "main":  [
+                                                  [
+                                                      {
+                                                          "node":  "기술지원캘린더",
+                                                          "type":  "main",
+                                                          "index":  0
+                                                      }
+                                                  ]
+                                              ]
+                                 },
+                        "IssueCheck":  {
+                                           "main":  [
+                                                        [
+                                                            {
+                                                                "node":  "연구소백로그 최신목록조회",
+                                                                "type":  "main",
+                                                                "index":  0
+                                                            }
+                                                        ]
+                                                    ]
+                                       },
+                        "연구소백로그 최신목록조회":  {
+                                              "main":  [
+                                                           [
+                                                               {
+                                                                   "node":  "Weekday Baseline",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ]
+                                                       ]
+                                          },
+                        "Team용 알림메세지 생성":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "3.이슈등록관리에 메세지",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "기술지원캘린더":  {
+                                        "main":  [
+                                                     [
+                                                         {
+                                                             "node":  "Team용 알림메세지 생성",
+                                                             "type":  "main",
+                                                             "index":  0
+                                                         }
+                                                     ]
+                                                 ]
+                                    },
+                        "Weekday Baseline":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "HTTP Request",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "Holiday DB Fallback":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Code in JavaScript1",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "callerPolicy":  "workflowsFromSameOwner",
+                     "availableInMCP":  false
+                 }
+}
