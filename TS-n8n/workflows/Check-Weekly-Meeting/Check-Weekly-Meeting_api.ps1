@@ -1,9 +1,14 @@
 param(
+    [switch]$AllowRestore,
     [string]$EnvFile = (Join-Path $PSScriptRoot "..\..\n8n.env"),
     [string]$WorkflowJson = (Join-Path $PSScriptRoot "Check-Weekly-Meeting_api.json")
 )
 
 $ErrorActionPreference = "Stop"
+
+if (-not $AllowRestore) {
+    throw "Check-Weekly-Meeting was retired and deleted from the n8n server on 2026-06-15. Pass -AllowRestore only if you intentionally want to restore it."
+}
 
 function Set-EnvFromFile {
     param(

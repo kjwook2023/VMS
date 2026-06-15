@@ -1,8 +1,8 @@
 # Workflow Notion Teams Interface
 
-- Snapshot time: `2026-06-12`
+- Snapshot time: `2026-06-15`
 - Scope: active workflows on the current n8n server
-- Active workflow count: `15`
+- Active workflow count: `14`
 
 ## Lunch Workflows
 
@@ -15,4 +15,5 @@
 
 - The current n8n base URL is `https://n8n.vmsmozart-test.com:8443`.
 - Both lunch workflows post into the same Teams destination.
+- `Check-Weekly-Meeting` was retired and deleted from the n8n server on `2026-06-15`.
 - For full workflow structure, use each workflow folder under `workflows/`.

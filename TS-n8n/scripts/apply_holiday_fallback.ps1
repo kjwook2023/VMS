@@ -5,7 +5,6 @@ param(
 $ErrorActionPreference = "Stop"
 
 $targets = @(
-    @{ Name = "Check-Weekly-Meeting"; Path = "workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json" },
     @{ Name = "Clean-Daily-Scrum"; Path = "workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_api.json" },
     @{ Name = "github-pr-monitor"; Path = "workflows/github-pr-monitor/github-pr-monitor_api.json" },
     @{ Name = "Plan-Daily-Scrum"; Path = "workflows/Plan-Daily-Scrum/Plan-Daily-Scrum_api.json" },

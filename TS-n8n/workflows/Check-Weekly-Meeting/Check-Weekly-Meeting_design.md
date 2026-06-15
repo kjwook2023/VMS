@@ -1,5 +1,11 @@
 ﻿# Check-Weekly-Meeting Design
 
+## Retired Status
+
+- Retired on: `2026-06-15`
+- Server workflow ID `vUILQ5GOQfdHJTsx` was deactivated and deleted from the n8n server.
+- The local workflow files are retained only for history or intentional restore work.
+
 ## 문서 성격
 
 - 이 문서는 n8n Public API 정의를 기준으로 자동 생성한 초안입니다.
@@ -10,7 +16,7 @@
 
 - Workflow name: Check-Weekly-Meeting
 - Workflow ID: vUILQ5GOQfdHJTsx
-- Active: True
+- Active on server: False (`deleted on 2026-06-15`)
 - Archived: False
 - Created at: 2026-03-03T06:14:34.602Z
 - Updated at: 2026-06-08T22:20:54.853Z

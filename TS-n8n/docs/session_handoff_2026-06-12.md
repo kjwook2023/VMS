@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Confirmed baseline for the lunch workflow and workflow-documentation updates completed as of `2026-06-12`.
+Confirmed baseline for the lunch workflow, `Clean-Daily-Scrum` half-day exception, and workflow-documentation updates completed as of `2026-06-12`.
 
 ## Confirmed State
 
@@ -12,6 +12,8 @@ Confirmed baseline for the lunch workflow and workflow-documentation updates com
 - `Lunch-Menu-Alert` (`yoA71hDhAmCR2CmU`) is `active`
 - Both lunch workflows run on weekday `11:30 KST`
 - Cron for both: `0 30 11 * * 1-5`
+- `Clean-Daily-Scrum` (`DbiuJ4y5XC8rDXbV`) is `active`
+- `Clean-Daily-Scrum` runs on weekday `11:30 KST` and `16:30 KST`
 
 ## Lunch-Recommendation-Alert
 
@@ -56,6 +58,26 @@ Confirmed implementation:
 - Schedule was changed from `11:45 KST` to `11:30 KST`
 - Current cron: `0 30 11 * * 1-5`
 
+## Clean-Daily-Scrum
+
+- Workflow JSON: [Clean-Daily-Scrum_api.json](D:/kjwook2023/vms/ts-n8n/workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_api.json)
+- Design note: [Clean-Daily-Scrum_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_design.md)
+- Patch helper: [update_clean_daily_scrum_halfday.js](D:/kjwook2023/vms/ts-n8n/scripts/update_clean_daily_scrum_halfday.js)
+
+Confirmed implementation:
+
+- Existing end-of-day scrum cleanup workflow remains `active`
+- Schedule now includes weekday `11:30 KST` and `16:30 KST`
+- `오전 반차` is treated the same as before
+- If at least one alert target is marked as `오후 반차`, the scrum cleanup notice is sent at `11:30 KST`
+- When `오후 반차` logic is triggered, the `16:30 KST` execution exits without sending a duplicate notice
+- If no `오후 반차` target exists, the workflow behaves as before and sends at `16:30 KST`
+
+Confirmed intent:
+
+- `업무 계획` is still handled in the morning by the separate planning workflow
+- The exception only exists so that `업무 정리` can be requested before an `오후 반차` user leaves
+
 ## Documentation Generator
 
 - Generator script: [workflows/_generate_active_workflow_docs.ps1](D:/kjwook2023/vms/ts-n8n/workflows/_generate_active_workflow_docs.ps1)
@@ -76,6 +98,7 @@ Reason for the change:
 - [session_handoff_draft_2026-06-11_lunch-recommendation-alert.md](D:/kjwook2023/vms/ts-n8n/docs/handoff_drafts/session_handoff_draft_2026-06-11_lunch-recommendation-alert.md)
 - [Lunch-Menu-Alert_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_design.md)
 - [Lunch-Recommendation-Alert_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_design.md)
+- [Clean-Daily-Scrum_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_design.md)
 
 ## Next Resume Point
 
