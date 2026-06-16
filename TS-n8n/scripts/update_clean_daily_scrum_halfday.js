@@ -8,6 +8,10 @@ const targetPath = process.argv[2]
 const SCHEDULE_NODE_ID = '3c6f643d-0e07-4a6d-855b-c0d36c544f77';
 const SLACK_CODE_NODE_ID = 'cbffff30-7fac-4c59-a73b-90a4e3fd564c';
 const TEAM_CODE_NODE_ID = '9d30c624-6163-40a5-85ee-8b9fc5d44091';
+const TEAM_WEBHOOK_NODE_ID = 'e8614695-a8e0-4471-9fb3-5dd4032aef0b';
+const TODAY_FILTER_NODE_ID = '3a95a1ae-43bd-4a09-8dc4-7a3fb49712d3';
+const REDACTED_TEAMS_WEBHOOK = 'https://redacted.invalid/powerautomate/daily-scrum-webhook';
+const DAILY_SCRUM_TEAMS_WEBHOOK = process.env.TS_DAILY_SCRUM_TEAMS_WEBHOOK || REDACTED_TEAMS_WEBHOOK;
 
 function lines(...items) {
   return items.join('\n');
@@ -19,6 +23,14 @@ function getNode(workflow, nodeId) {
     throw new Error(`Node not found: ${nodeId}`);
   }
   return node;
+}
+
+function findNode(workflow, nodeId) {
+  return Array.isArray(workflow.nodes) ? workflow.nodes.find((item) => item && item.id === nodeId) : null;
+}
+
+function mainConnection(targetName) {
+  return [[{ node: targetName, type: 'main', index: 0 }]];
 }
 
 const sharedLogicLines = [
@@ -198,6 +210,40 @@ const teamCode = lines(
   '}];'
 );
 
+const filterTodayVacationRowsCode = lines(
+  "const baseline = $('Weekday Baseline').first()?.json ?? {};",
+  "const today = String(baseline.todayDate || '');",
+  '',
+  'if (!today) {',
+  '  return [];',
+  '}',
+  '',
+  'const matches = $input.all()',
+  '  .filter((item) => {',
+  '    const data = item?.json ?? {};',
+  "    const startDate = String(data.property_date?.start || '');",
+  "    const endDate = String(data.property_date?.end || startDate || '');",
+  '    return Boolean(startDate) && today >= startDate && today <= endDate;',
+  '  })',
+  '  .map((item, index) => ({',
+  '    json: item.json,',
+  '    pairedItem: item.pairedItem ?? { item: index },',
+  '  }));',
+  '',
+  'if (matches.length > 0) {',
+  '  return matches;',
+  '}',
+  '',
+  'return [{',
+  '  json: {',
+  '    today_vacation_filter_applied: true,',
+  '    today_vacation_match_count: 0,',
+  '    today_date: today,',
+  '  },',
+  '  pairedItem: { item: 0 },',
+  '}];'
+);
+
 const workflow = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
 
 getNode(workflow, SCHEDULE_NODE_ID).parameters.rule.interval = [
@@ -216,7 +262,34 @@ getNode(workflow, SCHEDULE_NODE_ID).parameters.rule.interval = [
 ];
 
 getNode(workflow, SLACK_CODE_NODE_ID).parameters.jsCode = slackCode;
+getNode(workflow, SLACK_CODE_NODE_ID).alwaysOutputData = false;
 getNode(workflow, TEAM_CODE_NODE_ID).parameters.jsCode = teamCode;
+getNode(workflow, TEAM_CODE_NODE_ID).alwaysOutputData = false;
+getNode(workflow, TEAM_WEBHOOK_NODE_ID).parameters.url = DAILY_SCRUM_TEAMS_WEBHOOK;
+
+let todayFilterNode = findNode(workflow, TODAY_FILTER_NODE_ID);
+if (!todayFilterNode) {
+  todayFilterNode = {
+    parameters: { jsCode: filterTodayVacationRowsCode },
+    type: 'n8n-nodes-base.code',
+    typeVersion: 2,
+    position: [512, -112],
+    id: TODAY_FILTER_NODE_ID,
+    name: 'Filter Today Vacation Rows',
+    alwaysOutputData: false,
+  };
+  workflow.nodes.push(todayFilterNode);
+} else {
+  todayFilterNode.parameters.jsCode = filterTodayVacationRowsCode;
+  todayFilterNode.type = 'n8n-nodes-base.code';
+  todayFilterNode.typeVersion = 2;
+  todayFilterNode.position = [512, -112];
+  todayFilterNode.name = 'Filter Today Vacation Rows';
+  todayFilterNode.alwaysOutputData = false;
+}
+
+workflow.connections['Get many database pages'] = { main: mainConnection('Filter Today Vacation Rows') };
+workflow.connections['Filter Today Vacation Rows'] = { main: mainConnection(getNode(workflow, TEAM_CODE_NODE_ID).name) };
 
 fs.writeFileSync(targetPath, JSON.stringify(workflow, null, 4));
 console.log(`Updated ${targetPath}`);

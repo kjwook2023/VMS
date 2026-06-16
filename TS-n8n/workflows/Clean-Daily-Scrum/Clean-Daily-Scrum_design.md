@@ -22,6 +22,8 @@
 
 초안 목적: 데일리 스크럼 준비, 정리, 리마인드, 확인 절차를 자동화하기 위한 워크플로우로 보입니다.
 오후 반차 대상자가 있으면 11:30 에 앞당겨 알리고, 그렇지 않으면 16:30 에 알리도록 동작합니다.
+11:30 에는 실제 당일 오후 반차 대상자가 있을 때만 Teams 알림 경로로 진행되고, 그렇지 않으면 알림 없이 종료되어야 합니다.
+같은 날 오후 반차 대상자가 없으면 16:30 이 기본 업무 정리 알림 시점입니다.
 
 ## 언제 실행되는가
 
@@ -32,8 +34,9 @@
 - HTTP Request -> Holiday DB Fallback
 - Code in JavaScript1 -> 휴일체크
 - 휴일체크 -> Get many database pages
+- Get many database pages -> Filter Today Vacation Rows
+- Filter Today Vacation Rows -> Team용 휴가체크
 - Clean-DailyScrum -> Weekday Baseline
-- Get many database pages -> Team용 휴가체크
 - Weekday Baseline -> HTTP Request
 - Holiday DB Fallback -> Code in JavaScript1
 - Slack용 휴가체크 -> Send a message
@@ -97,6 +100,15 @@
 - 해석 근거: type=n8n-nodes-base.notion
 - Credential: tsupport API
 
+### Filter Today Vacation Rows
+
+- 타입: n8n-nodes-base.code / version=2
+- 역할: Notion 원본 중 오늘 날짜에 해당하는 행만 남깁니다.
+- 필요한 이유: 과거 휴가/반차 이력이 이후 판단 로직에 섞여 들어가지 않도록 하기 위해 필요합니다.
+- 추가 동작: 오늘 날짜 일치 행이 하나도 없을 때는 placeholder item 1건을 넘겨서, 16:30 기본 알림 판단은 계속 진행되도록 유지합니다.
+- 해석 근거: type=n8n-nodes-base.code, date-range filter logic detected
+- Credential: 없음
+
 ### Team용 휴가체크
 
 - 타입: n8n-nodes-base.code / version=2
@@ -110,7 +122,8 @@
 - 타입: n8n-nodes-base.httpRequest / version=4.3
 - 역할: 가공된 결과를 Power Automate 또는 알림용 엔드포인트로 전달합니다.
 - 필요한 이유: 이 노드가 없으면 외부 시스템에서 데이터를 가져오거나 외부로 결과를 보낼 수 없습니다.
-- 해석 근거: type=n8n-nodes-base.httpRequest, url=https://redacted.invalid/powerautomate/webhook
+- 해석 근거: type=n8n-nodes-base.httpRequest, redacted repository webhook placeholder detected
+- 운영 메모: 저장소 export 는 redacted placeholder 를 유지하고, 실제 배포 시에는 `TS_DAILY_SCRUM_TEAMS_WEBHOOK` 환경 변수로 live webhook 을 주입해야 합니다.
 - Credential: 없음
 
 ### Weekday Baseline
@@ -135,7 +148,7 @@
 - Send a message: Slack 전송 대상 -> 2-기술지원_데일리스크럼
 - HTTP Request: HTTP API 호출 -> =http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?solYear={{ $json['Year'] }}&numOfRows=50&ServiceKey=ea205130648aa0e11f1cc778bef29d18ef68b212e587c5590792dbd4f0a6b5c0
 - Get many database pages: Notion 데이터베이스 조회 -> 기술지원캘린더DB
-- Teams 업무관리(스크럽)에 보내기: HTTP API 호출 -> https://redacted.invalid/powerautomate/webhook
+- Teams 업무관리(스크럽)에 보내기: HTTP API 호출 -> repository export 는 redacted placeholder 사용, active server 는 live Daily Scrum Teams webhook 사용
 
 ## 해석 근거
 

@@ -13,7 +13,7 @@
             ],
             "id": "cbffff30-7fac-4c59-a73b-90a4e3fd564c",
             "name": "Slack용 휴가체크",
-            "alwaysOutputData": true,
+            "alwaysOutputData": false,
             "disabled": true
         },
         {
@@ -202,12 +202,12 @@
             ],
             "id": "9d30c624-6163-40a5-85ee-8b9fc5d44091",
             "name": "Team용 휴가체크",
-            "alwaysOutputData": true
+            "alwaysOutputData": false
         },
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://redacted.invalid/powerautomate/webhook",
+                "url": "https://redacted.invalid/powerautomate/daily-scrum-webhook",
                 "sendBody": true,
                 "contentType": "json",
                 "specifyBody": "json",
@@ -266,6 +266,20 @@
                     "name": "TsMgmt(DevTest_SQL2022_26)"
                 }
             }
+        },
+        {
+            "parameters": {
+                "jsCode": "const baseline = $('Weekday Baseline').first()?.json ?? {};\nconst today = String(baseline.todayDate || '');\n\nif (!today) {\n  return [];\n}\n\nconst matches = $input.all()\n  .filter((item) => {\n    const data = item?.json ?? {};\n    const startDate = String(data.property_date?.start || '');\n    const endDate = String(data.property_date?.end || startDate || '');\n    return Boolean(startDate) && today >= startDate && today <= endDate;\n  })\n  .map((item, index) => ({\n    json: item.json,\n    pairedItem: item.pairedItem ?? { item: index },\n  }));\n\nif (matches.length > 0) {\n  return matches;\n}\n\nreturn [{\n  json: {\n    today_vacation_filter_applied: true,\n    today_vacation_match_count: 0,\n    today_date: today,\n  },\n  pairedItem: { item: 0 },\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                512,
+                -112
+            ],
+            "id": "3a95a1ae-43bd-4a09-8dc4-7a3fb49712d3",
+            "name": "Filter Today Vacation Rows",
+            "alwaysOutputData": false
         }
     ],
     "connections": {
@@ -317,7 +331,7 @@
             "main": [
                 [
                     {
-                        "node": "Team용 휴가체크",
+                        "node": "Filter Today Vacation Rows",
                         "type": "main",
                         "index": 0
                     }
@@ -362,6 +376,17 @@
                 [
                     {
                         "node": "Teams 업무관리(스크럽)에 보내기",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Today Vacation Rows": {
+            "main": [
+                [
+                    {
+                        "node": "Team용 휴가체크",
                         "type": "main",
                         "index": 0
                     }

@@ -73,7 +73,21 @@ if (-not (Test-Path -LiteralPath $WorkflowJson)) {
     throw "Workflow JSON not found: $WorkflowJson"
 }
 
-$workflow = Get-Content -LiteralPath $WorkflowJson -Raw | ConvertFrom-Json
+$workflowJsonText = Get-Content -LiteralPath $WorkflowJson -Raw
+$redactedTeamsWebhook = "https://redacted.invalid/powerautomate/daily-scrum-webhook"
+
+if ($workflowJsonText.Contains($redactedTeamsWebhook)) {
+    if (-not $env:TS_DAILY_SCRUM_TEAMS_WEBHOOK) {
+        throw "TS_DAILY_SCRUM_TEAMS_WEBHOOK is required when Clean-Daily-Scrum_api.json contains the redacted Teams webhook placeholder."
+    }
+
+    $workflowJsonText = $workflowJsonText.Replace($redactedTeamsWebhook, $env:TS_DAILY_SCRUM_TEAMS_WEBHOOK)
+}
+
+$tempWorkflowJson = Join-Path ([System.IO.Path]::GetTempPath()) ("Clean-Daily-Scrum_" + [guid]::NewGuid().ToString() + ".json")
+[System.IO.File]::WriteAllText($tempWorkflowJson, $workflowJsonText, [System.Text.UTF8Encoding]::new($false))
+
+$workflow = $workflowJsonText | ConvertFrom-Json
 $workflowName = $workflow.name
 
 if (-not $workflowName) {
@@ -87,7 +101,7 @@ $target = $existing.data | Where-Object { $_.name -eq $workflowName } | Select-O
 
 if ($target) {
     $updateUrl = "$baseUrl/api/v1/workflows/$($target.id)"
-    $result = Invoke-N8nApi -Method PUT -Url $updateUrl -BodyFile $WorkflowJson
+    $result = Invoke-N8nApi -Method PUT -Url $updateUrl -BodyFile $tempWorkflowJson
     [PSCustomObject]@{
         action = "updated"
         id = $result.id
@@ -98,7 +112,7 @@ if ($target) {
 }
 else {
     $createUrl = "$baseUrl/api/v1/workflows"
-    $result = Invoke-N8nApi -Method POST -Url $createUrl -BodyFile $WorkflowJson
+    $result = Invoke-N8nApi -Method POST -Url $createUrl -BodyFile $tempWorkflowJson
     [PSCustomObject]@{
         action = "created"
         id = $result.id
@@ -106,4 +120,8 @@ else {
         active = $result.active
         updatedAt = $result.updatedAt
     }
+}
+
+if (Test-Path -LiteralPath $tempWorkflowJson) {
+    Remove-Item -LiteralPath $tempWorkflowJson -Force
 }
