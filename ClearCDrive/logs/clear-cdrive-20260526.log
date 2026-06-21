@@ -1,0 +1,4 @@
+﻿[2026-05-26 18:08:37] command=clean-safe root=C:\Users\V_JINWKIM\AppData\Local candidates=23 total=241.70 GB safe=10.85 GB
+[2026-05-26 18:08:37] command=scan root=C:\Users\V_JINWKIM\AppData\Local candidates=43 total=253.91 GB safe=11.27 GB
+[2026-05-26 18:10:18] command=scan root=C:\Users\V_JINWKIM\AppData\Local candidates=42 total=183.31 GB safe=11.27 GB
+[2026-05-26 18:11:40] command=scan root=C:\Users\V_JINWKIM\AppData\Local candidates=42 total=183.30 GB safe=11.27 GB

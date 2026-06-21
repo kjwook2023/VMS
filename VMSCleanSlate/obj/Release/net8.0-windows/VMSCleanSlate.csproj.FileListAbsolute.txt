@@ -1,0 +1,13 @@
+D:\KJWOOK2023\VMS\VMSCleanSlate\bin\Release\net8.0-windows\VMSCleanSlate.exe
+D:\KJWOOK2023\VMS\VMSCleanSlate\bin\Release\net8.0-windows\VMSCleanSlate.deps.json
+D:\KJWOOK2023\VMS\VMSCleanSlate\bin\Release\net8.0-windows\VMSCleanSlate.runtimeconfig.json
+D:\KJWOOK2023\VMS\VMSCleanSlate\bin\Release\net8.0-windows\VMSCleanSlate.dll
+D:\KJWOOK2023\VMS\VMSCleanSlate\obj\Release\net8.0-windows\VMSCleanSlate.GeneratedMSBuildEditorConfig.editorconfig
+D:\KJWOOK2023\VMS\VMSCleanSlate\obj\Release\net8.0-windows\VMSCleanSlate.AssemblyInfoInputs.cache
+D:\KJWOOK2023\VMS\VMSCleanSlate\obj\Release\net8.0-windows\VMSCleanSlate.AssemblyInfo.cs
+D:\KJWOOK2023\VMS\VMSCleanSlate\obj\Release\net8.0-windows\VMSCleanSlate.csproj.CoreCompileInputs.cache
+D:\KJWOOK2023\VMS\VMSCleanSlate\obj\Release\net8.0-windows\VMSCleanSlate.sourcelink.json
+D:\KJWOOK2023\VMS\VMSCleanSlate\obj\Release\net8.0-windows\VMSCleanSlate.dll
+D:\KJWOOK2023\VMS\VMSCleanSlate\obj\Release\net8.0-windows\refint\VMSCleanSlate.dll
+D:\KJWOOK2023\VMS\VMSCleanSlate\obj\Release\net8.0-windows\VMSCleanSlate.genruntimeconfig.cache
+D:\KJWOOK2023\VMS\VMSCleanSlate\obj\Release\net8.0-windows\ref\VMSCleanSlate.dll

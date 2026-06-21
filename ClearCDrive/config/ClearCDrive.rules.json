@@ -1,0 +1,91 @@
+[
+  {
+    "Name": "DiagnosticsHub Reports",
+    "Pattern": "Temp\\dh\\Report.*",
+    "Category": "DiagnosticReport",
+    "Safety": "Safe",
+    "StaleDays": 7,
+    "Notes": "Visual Studio Diagnostics Hub report folders. Old profiling sessions can be removed.",
+    "CleanupHint": "Delete after confirming no active Visual Studio profiling session."
+  },
+  {
+    "Name": "Crash Dumps",
+    "Pattern": "CrashDumps\\*",
+    "Category": "CrashDump",
+    "Safety": "Review",
+    "StaleDays": 30,
+    "Notes": "Crash dumps help investigate failures. Keep recent dumps you still need."
+  },
+  {
+    "Name": "User Temp Items",
+    "Pattern": "Temp\\*",
+    "Category": "Temp",
+    "Safety": "SafeIfClosed",
+    "StaleDays": 14,
+    "Notes": "General user temp files. Delete only after related apps are closed."
+  },
+  {
+    "Name": "Direct3D Shader Cache",
+    "Pattern": "D3DSCache\\*",
+    "Category": "ShaderCache",
+    "Safety": "Safe",
+    "StaleDays": 14,
+    "Notes": "Windows shader cache. It will be rebuilt as needed."
+  },
+  {
+    "Name": "NVIDIA DX Cache",
+    "Pattern": "NVIDIA\\DXCache\\*",
+    "Category": "GpuCache",
+    "Safety": "Safe",
+    "StaleDays": 14,
+    "Notes": "GPU driver shader cache. It can be rebuilt."
+  },
+  {
+    "Name": "NVIDIA GL Cache",
+    "Pattern": "NVIDIA\\GLCache\\*",
+    "Category": "GpuCache",
+    "Safety": "Safe",
+    "StaleDays": 14,
+    "Notes": "OpenGL cache files. They can be rebuilt."
+  },
+  {
+    "Name": "Windows INetCache",
+    "Pattern": "Microsoft\\Windows\\INetCache\\*",
+    "Category": "BrowserCache",
+    "Safety": "SafeIfClosed",
+    "StaleDays": 14,
+    "Notes": "Legacy Windows internet cache."
+  },
+  {
+    "Name": "UWP TempState",
+    "Pattern": "Packages\\*\\TempState",
+    "Category": "AppTemp",
+    "Safety": "SafeIfClosed",
+    "StaleDays": 14,
+    "Notes": "Per-app temporary state for Store apps. Close the app before cleanup."
+  },
+  {
+    "Name": "UWP LocalCache",
+    "Pattern": "Packages\\*\\LocalCache",
+    "Category": "AppCache",
+    "Safety": "Review",
+    "StaleDays": 30,
+    "Notes": "Per-app cache. Review because some apps use this path for offline data."
+  },
+  {
+    "Name": "Chrome Code Cache",
+    "Pattern": "Google\\Chrome\\User Data\\*\\Code Cache",
+    "Category": "BrowserCache",
+    "Safety": "SafeIfClosed",
+    "StaleDays": 14,
+    "Notes": "Chrome code cache. Close Chrome before cleanup."
+  },
+  {
+    "Name": "Edge Code Cache",
+    "Pattern": "Microsoft\\Edge\\User Data\\*\\Code Cache",
+    "Category": "BrowserCache",
+    "Safety": "SafeIfClosed",
+    "StaleDays": 14,
+    "Notes": "Edge code cache. Close Edge before cleanup."
+  }
+]

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>VMSCleanSlate</RootNamespace>
+    <AssemblyName>VMSCleanSlate</AssemblyName>
+    <Version>1.0.0.0</Version>
+    <Company>VMS</Company>
+    <Product>VMSCleanSlate</Product>
+    <Description>Public-PC auth info cleaner with system tray UI</Description>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <!-- 빌드 전 자동 암호화 (Scripts\*.ps1 -> Scripts.enc\*.ps1.enc) -->
+  <ItemGroup>
+    <_PsSourceScripts Include="Scripts\**\*.ps1" />
+  </ItemGroup>
+
+  <Target Name="EncryptPsScripts"
+          BeforeTargets="BeforeBuild;BeforeResGen"
+          Inputs="@(_PsSourceScripts);Build\EncryptScripts.ps1"
+          Outputs="Scripts.enc\.stamp">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\Build\EncryptScripts.ps1&quot; -InputDir &quot;$(MSBuildProjectDirectory)\Scripts&quot; -OutputDir &quot;$(MSBuildProjectDirectory)\Scripts.enc&quot;" />
+  </Target>
+
+  <!-- 암호화된 파일만 임베디드 (원본 .ps1 은 임베디드되지 않음) -->
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts.enc\**\*.ps1.enc">
+      <LogicalName>$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)\Scripts.enc\', '%(FullPath)').Replace('\', '/'))</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,51 @@
+﻿Command: scan
+GeneratedAt: 2026-05-26 18:08:37
+Root: C:\Users\V_JINWKIM\AppData\Local
+CandidateCount: 43
+TotalCandidate: 253.91 GB
+SafeCleanup: 11.27 GB
+
+Recommendation | Safety | Category | Size | AgeDays | FileCount | LastWriteTime | Path
+Watch | Review | TopLevelDiscovery | 107.02 GB | -0.0 | 149439 | 2026-05-26 18:08:23 | C:\Users\V_JINWKIM\AppData\Local\Temp
+Watch | SafeIfClosed | Temp | 35.30 GB | 0.0 | 1 | 2026-05-26 17:27:34 | C:\Users\V_JINWKIM\AppData\Local\Temp\sc_user_aux_summary.txt
+Watch | Review | TopLevelDiscovery | 14.32 GB | -0.0 | 108583 | 2026-05-26 18:07:47 | C:\Users\V_JINWKIM\AppData\Local\Microsoft
+Watch | Review | TopLevelDiscovery | 13.89 GB | -0.0 | 65707 | 2026-05-26 18:07:35 | C:\Users\V_JINWKIM\AppData\Local\Google
+DeleteWhenAppClosed | SafeIfClosed | Temp | 11.52 GB | 19.0 | 23 | 2026-05-07 17:01:53 | C:\Users\V_JINWKIM\AppData\Local\Temp\dh
+DeleteSafe | Safe | DiagnosticReport | 10.85 GB | 95.2 | 2 | 2026-02-20 13:02:15 | C:\Users\V_JINWKIM\AppData\Local\Temp\dh\Report.6E5842C9-4F54-4509-8B55-F0A5465C26D5
+Watch | Review | TopLevelDiscovery | 9.07 GB | 5.9 | 27460 | 2026-05-20 20:48:13 | C:\Users\V_JINWKIM\AppData\Local\Programs
+Watch | SafeIfClosed | Temp | 5.71 GB | 6.3 | 813 | 2026-05-20 10:21:51 | C:\Users\V_JINWKIM\AppData\Local\Temp\VSTelem
+Watch | SafeIfClosed | Temp | 4.62 GB | -0.0 | 35016 | 2026-05-26 18:07:12 | C:\Users\V_JINWKIM\AppData\Local\Temp\Outlook Logging
+Watch | Review | TopLevelDiscovery | 4.59 GB | -0.0 | 10034 | 2026-05-26 18:07:42 | C:\Users\V_JINWKIM\AppData\Local\Kakao
+Watch | Review | TopLevelDiscovery | 3.22 GB | 0.1 | 38613 | 2026-05-26 16:32:34 | C:\Users\V_JINWKIM\AppData\Local\npm-cache
+Watch | Review | TopLevelDiscovery | 3.16 GB | 0.0 | 2591 | 2026-05-26 17:49:30 | C:\Users\V_JINWKIM\AppData\Local\NuGet
+Watch | Review | TopLevelDiscovery | 2.99 GB | -0.0 | 24615 | 2026-05-26 18:08:06 | C:\Users\V_JINWKIM\AppData\Local\Packages
+Watch | SafeIfClosed | Temp | 2.15 GB | 5.5 | 496 | 2026-05-21 06:04:09 | C:\Users\V_JINWKIM\AppData\Local\Temp\ar0jxmz2
+Watch | Review | TopLevelDiscovery | 1.99 GB | 0.0 | 18 | 2026-05-26 17:36:03 | C:\Users\V_JINWKIM\AppData\Local\Ollama
+Watch | Review | TopLevelDiscovery | 1.84 GB | 20.2 | 5810 | 2026-05-06 14:26:28 | C:\Users\V_JINWKIM\AppData\Local\SquirrelTemp
+DeleteWhenAppClosed | SafeIfClosed | Temp | 1.84 GB | 78.4 | 43 | 2026-03-09 07:35:37 | C:\Users\V_JINWKIM\AppData\Local\Temp\tmp
+DeleteWhenAppClosed | SafeIfClosed | Temp | 1.53 GB | 218.2 | 1096 | 2025-10-20 13:37:58 | C:\Users\V_JINWKIM\AppData\Local\Temp\WISE
+Watch | Review | AppCache | 1.37 GB | -0.0 | 9422 | 2026-05-26 18:07:18 | C:\Users\V_JINWKIM\AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache
+DeleteWhenAppClosed | SafeIfClosed | Temp | 1.32 GB | 34.5 | 1595 | 2026-04-22 06:44:46 | C:\Users\V_JINWKIM\AppData\Local\Temp\Studio
+Watch | Review | TopLevelDiscovery | 1.26 GB | 20.2 | 3810 | 2026-05-06 14:02:29 | C:\Users\V_JINWKIM\AppData\Local\LINQPad
+Watch | Review | TopLevelDiscovery | 1.08 GB | 0.0 | 1915 | 2026-05-26 18:02:50 | C:\Users\V_JINWKIM\AppData\Local\GitHubDesktop
+Watch | Review | TopLevelDiscovery | 1.05 GB | 1.6 | 1994 | 2026-05-25 02:34:58 | C:\Users\V_JINWKIM\AppData\Local\AnthropicClaude
+DeleteWhenAppClosed | SafeIfClosed | Temp | 989.56 MB | 222.2 | 3 | 2025-10-16 13:34:05 | C:\Users\V_JINWKIM\AppData\Local\Temp\05131C08-5920-4A12-A61B-4C443D8AAC21
+Review | Review | TopLevelDiscovery | 954.59 MB | 53.5 | 158 | 2026-04-03 07:00:52 | C:\Users\V_JINWKIM\AppData\Local\Postman-Agent
+Watch | SafeIfClosed | Temp | 926.82 MB | 0.0 | 316 | 2026-05-26 17:41:17 | C:\Users\V_JINWKIM\AppData\Local\Temp\Diagnostics
+Watch | Review | TopLevelDiscovery | 884.30 MB | 11.6 | 377 | 2026-05-15 03:32:07 | C:\Users\V_JINWKIM\AppData\Local\slack
+Watch | SafeIfClosed | Temp | 842.69 MB | 5.5 | 76 | 2026-05-21 06:04:52 | C:\Users\V_JINWKIM\AppData\Local\Temp\1ov3fogx
+DeleteWhenAppClosed | SafeIfClosed | Temp | 804.94 MB | 222.1 | 3 | 2025-10-16 16:19:20 | C:\Users\V_JINWKIM\AppData\Local\Temp\2D00B82F-0A4B-4B91-A39A-2B6A22172BFB
+Watch | SafeIfClosed | BrowserCache | 732.23 MB | 0.0 | 5843 | 2026-05-26 18:02:56 | C:\Users\V_JINWKIM\AppData\Local\Google\Chrome\User Data\Default\Code Cache
+Watch | SafeIfClosed | BrowserCache | 725.96 MB | 0.0 | 14102 | 2026-05-26 17:27:00 | C:\Users\V_JINWKIM\AppData\Local\Microsoft\Edge\User Data\Default\Code Cache
+DeleteWhenAppClosed | SafeIfClosed | Temp | 707.87 MB | 19.0 | 2002 | 2026-05-07 17:04:24 | C:\Users\V_JINWKIM\AppData\Local\Temp\.net
+Watch | Review | TopLevelDiscovery | 657.45 MB | 0.2 | 2813 | 2026-05-26 14:04:24 | C:\Users\V_JINWKIM\AppData\Local\Adobe
+Watch | Review | TopLevelDiscovery | 629.28 MB | 11.3 | 171 | 2026-05-15 10:41:37 | C:\Users\V_JINWKIM\AppData\Local\Channel
+DeleteWhenAppClosed | SafeIfClosed | Temp | 586.78 MB | 78.5 | 3 | 2026-03-09 07:07:49 | C:\Users\V_JINWKIM\AppData\Local\Temp\WacTemp
+Watch | Review | TopLevelDiscovery | 556.86 MB | 6.4 | 864 | 2026-05-20 07:44:21 | C:\Users\V_JINWKIM\AppData\Local\pip
+DeleteSafe | Safe | DiagnosticReport | 433.84 MB | 194.3 | 3 | 2025-11-13 12:04:29 | C:\Users\V_JINWKIM\AppData\Local\Temp\dh\Report.3FDDB230-652C-4B3D-9B87-4F1CE1BB12DC
+DeleteWhenAppClosed | SafeIfClosed | Temp | 432.99 MB | 34.5 | 6 | 2026-04-22 06:44:50 | C:\Users\V_JINWKIM\AppData\Local\Temp\IDE
+DeleteWhenAppClosed | SafeIfClosed | Temp | 395.85 MB | 34.5 | 510 | 2026-04-22 06:47:49 | C:\Users\V_JINWKIM\AppData\Local\Temp\MMC
+Review | Review | TopLevelDiscovery | 378.46 MB | 42.4 | 3 | 2026-04-14 07:50:46 | C:\Users\V_JINWKIM\AppData\Local\canva-updater
+Watch | Review | TopLevelDiscovery | 312.36 MB | 20.2 | 7071 | 2026-05-06 13:26:57 | C:\Users\V_JINWKIM\AppData\Local\flutter_webview_windows
+Review | Review | TopLevelDiscovery | 281.84 MB | 42.3 | 1 | 2026-04-14 10:22:07 | C:\Users\V_JINWKIM\AppData\Local\obsidian-updater
+Watch | Review | TopLevelDiscovery | 266.07 MB | 0.0 | 15 | 2026-05-26 17:42:49 | C:\Users\V_JINWKIM\AppData\Local\VmsPwDesktop

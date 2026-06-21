@@ -1,0 +1,2 @@
+D:\KJWOOK2023\VMS\ClearCDrive\dist\win-x64\ClearCDrive.pdb
+D:\KJWOOK2023\VMS\ClearCDrive\dist\win-x64\ClearCDrive.exe

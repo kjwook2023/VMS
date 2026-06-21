@@ -1,0 +1,28 @@
+[07:43:23.211] SessionSwitch event: Reason=SessionLock
+[07:43:23.213]   TriggerOnLock = N
+[07:43:23.213]   -> trigger OFF, skip cleanup
+[07:43:28.561] SessionSwitch event: Reason=SessionUnlock
+[07:43:28.561]   -> not SessionLock, ignored
+[07:45:44.156] SessionEnding: shutdown skipped because GPO Logoff will handle cleanup
+[07:47:57.674] RunCleanupNow: started
+[07:47:58.305]   user cleanup: rc=1, err='��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_ab692a3a\VMSCleanSlate.ps1:259 ����:63'
+[07:47:58.305]   system cleanup: deferred to GPO Shutdown hook
+[07:47:58.332]   -> error shown: ��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_ab692a3a\VMSCleanSlate.ps1:259 ����:63
+[07:48:45.860] RunCleanupNow: started
+[07:48:46.082]   user cleanup: rc=1, err='��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_488b6e6b\VMSCleanSlate.ps1:259 ����:63'
+[07:48:46.083]   system cleanup: deferred to GPO Shutdown hook
+[07:48:46.097]   -> error shown: ��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_488b6e6b\VMSCleanSlate.ps1:259 ����:63
+[07:48:54.724] RunCleanupNow: started
+[07:48:55.046]   user cleanup: rc=1, err='��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_8371f797\VMSCleanSlate.ps1:259 ����:63'
+[07:48:55.047]   system cleanup: deferred to GPO Shutdown hook
+[07:48:55.067]   -> error shown: ��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_8371f797\VMSCleanSlate.ps1:259 ����:63
+[07:49:12.320] RunCleanupNow: started
+[07:49:12.612]   user cleanup: rc=1, err='��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_0eff06a3\VMSCleanSlate.ps1:259 ����:63'
+[07:49:12.612]   system cleanup: deferred to GPO Shutdown hook
+[07:49:12.636]   -> error shown: ��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_0eff06a3\VMSCleanSlate.ps1:259 ����:63
+[07:49:55.853] RunCleanupNow: started
+[07:49:56.075]   user cleanup: rc=1, err='��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_2a3a54e2\VMSCleanSlate.ps1:259 ����:63'
+[07:49:56.093]   -> error shown: ��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_2a3a54e2\VMSCleanSlate.ps1:259 ����:63
+[07:50:47.307] RunCleanupNow: started
+[07:50:47.590]   user cleanup: rc=1, err='��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_76f954fa\VMSCleanSlate.ps1:259 ����:63'
+[07:50:47.623]   -> error shown: ��ġ C:\Users\VMS SOLUTIONS\AppData\Local\Temp\VMSCleanSlate_76f954fa\VMSCleanSlate.ps1:259 ����:63

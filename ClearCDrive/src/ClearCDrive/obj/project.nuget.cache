@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "9y6+WYpS5H8=",
+  "success": true,
+  "projectFilePath": "D:\\KJWOOK2023\\VMS\\ClearCDrive\\src\\ClearCDrive\\ClearCDrive.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\V_JINWKIM\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.26\\microsoft.net.illink.tasks.8.0.26.nupkg.sha512",
+    "C:\\Users\\V_JINWKIM\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\8.0.26\\microsoft.netcore.app.runtime.win-x64.8.0.26.nupkg.sha512",
+    "C:\\Users\\V_JINWKIM\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\8.0.26\\microsoft.windowsdesktop.app.runtime.win-x64.8.0.26.nupkg.sha512",
+    "C:\\Users\\V_JINWKIM\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\8.0.26\\microsoft.aspnetcore.app.runtime.win-x64.8.0.26.nupkg.sha512"
+  ],
+  "logs": []
+}

@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!--
+  Confuse template — Build.ps1 가 baseDir/outputDir 을 절대 경로로 치환.
+  .NET 8 single-file 호환을 위해 다음 보호는 제외:
+    - anti tamper : single-file extract 시 IL 무결성 검증이 깨짐 → AppCrash
+    - anti debug  : .NET 8 호스트 디버거 검사와 충돌 가능
+    - anti dump   : 일부 보안 솔루션과 충돌 가능
+    - ref proxy   : WinForms 외부 API 호출이 많은 환경에서 불안정
+    - type scrambler / invalid metadata : reflection / serializer 와 충돌 가능
+  남는 보호로도 디컴파일 저항은 충분 (rename + constants + ctrl flow).
+-->
+<project outputDir="@@OUTPUT_DIR@@" baseDir="@@BASE_DIR@@" xmlns="http://confuser.codeplex.com">
+  <rule pattern="true" preset="none" inherit="false">
+    <!-- 켜는 보호 -->
+    <protection id="rename" />
+    <protection id="ctrl flow" />
+    <!--
+      'constants' 는 LZMA 기반 상수 인코딩인데 .NET 8 single-file 환경에서
+      .cctor 단계에 OverflowException(windowSize/dictionarySize) 을 일으킨다.
+      상수 노출 보호가 약해지지만 동작 안정성을 우선해 제거.
+      (가장 민감한 PowerShell 정리 로직은 이미 AES 암호화로 따로 보호됨)
+    -->
+    <!-- 명시적으로 끄는 보호 (single-file 호환) -->
+    <protection id="constants"       action="remove" />
+    <protection id="anti tamper"     action="remove" />
+    <protection id="anti debug"      action="remove" />
+    <protection id="anti dump"       action="remove" />
+    <protection id="anti ildasm"     action="remove" />
+    <protection id="ref proxy"       action="remove" />
+    <protection id="invalid metadata" action="remove" />
+    <protection id="resources"       action="remove" />
+  </rule>
+  <module path="VMSCleanSlate.dll" />
+</project>

@@ -1,0 +1,17 @@
+{
+  "TriggerOnLogoff": "Y",
+  "TriggerOnShutdown": "Y",
+  "TriggerOnLock": "N",
+  "WorkSchoolAccess": "Y",
+  "DeviceEnrollmentCleanup": "Y",
+  "Microsoft365": "Y",
+  "OneDriveSignout": "Y",
+  "OneDriveLocalFolder": "Y",
+  "Teams": "Y",
+  "Notion": "Y",
+  "Slack": "Y",
+  "BrowserCookies": "Y",
+  "HourlyNotify": "Y",
+  "Backup": "N",
+  "LogOnlyOnError": "Y"
+}
