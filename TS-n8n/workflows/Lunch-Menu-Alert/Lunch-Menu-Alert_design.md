@@ -108,14 +108,14 @@
 - 타입: n8n-nodes-base.httpRequest / version=4.3
 - 역할: 가공된 결과를 Power Automate 또는 알림용 엔드포인트로 전달합니다.
 - 필요한 이유: 이 노드가 없으면 외부 시스템에서 데이터를 가져오거나 외부로 결과를 보낼 수 없습니다.
-- 해석 근거: type=n8n-nodes-base.httpRequest, url=https://redacted.invalid/powerautomate/webhook
+- 해석 근거: type=n8n-nodes-base.httpRequest, url=https://redacted.invalid/powerautomate/lunch-menu-webhook
 - Credential: 없음
 
 
 ## 외부 시스템 연동
 
 - Fetch Kakao Lunch Posts: HTTP API 호출 -> https://pf.kakao.com/rocket-web/web/profiles/_xgUVZn/posts/recent?size=10
-- Lunch Teams Webhook: HTTP API 호출 -> https://redacted.invalid/powerautomate/webhook
+- Lunch Teams Webhook: HTTP API 호출 -> https://redacted.invalid/powerautomate/lunch-menu-webhook
 
 ## 해석 근거
 

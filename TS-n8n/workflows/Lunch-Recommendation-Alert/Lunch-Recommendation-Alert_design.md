@@ -217,7 +217,7 @@
 - 타입: n8n-nodes-base.httpRequest / version=4.3
 - 역할: 가공된 결과를 Power Automate 또는 알림용 엔드포인트로 전달합니다.
 - 필요한 이유: 이 노드가 없으면 외부 시스템에서 데이터를 가져오거나 외부로 결과를 보낼 수 없습니다.
-- 해석 근거: type=n8n-nodes-base.httpRequest, url=https://redacted.invalid/powerautomate/webhook
+- 해석 근거: type=n8n-nodes-base.httpRequest, url=https://redacted.invalid/powerautomate/lunch-recommendation-webhook
 - Credential: 없음
 
 
@@ -231,7 +231,7 @@
 - Search Drive Restaurants North: HTTP API 호출 -> https://dapi.kakao.com/v2/local/search/category.json
 - Search Drive Restaurants South: HTTP API 호출 -> https://dapi.kakao.com/v2/local/search/category.json
 - Ask Gemini Lunch Recommendation: HTTP API 호출 -> https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
-- Lunch Teams Webhook: HTTP API 호출 -> https://redacted.invalid/powerautomate/webhook
+- Lunch Teams Webhook: HTTP API 호출 -> https://redacted.invalid/powerautomate/lunch-recommendation-webhook
 
 ## 해석 근거
 

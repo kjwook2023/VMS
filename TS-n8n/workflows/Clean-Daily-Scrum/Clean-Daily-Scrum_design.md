@@ -13,10 +13,10 @@
 - Active: True
 - Archived: False
 - Created at: 2026-03-03T06:08:01.680Z
-- Updated at: 2026-05-21T23:23:00.891Z
-- Version counter: 98
-- Node count: 11
-- Connection source count: 9
+- Updated at: 2026-06-16T07:56:04.765Z
+- Version counter: 108
+- Node count: 12
+- Connection source count: 10
 
 ## 업무 목적 초안
 
@@ -34,13 +34,13 @@
 - HTTP Request -> Holiday DB Fallback
 - Code in JavaScript1 -> 휴일체크
 - 휴일체크 -> Get many database pages
-- Get many database pages -> Filter Today Vacation Rows
-- Filter Today Vacation Rows -> Team용 휴가체크
 - Clean-DailyScrum -> Weekday Baseline
+- Get many database pages -> Filter Today Vacation Rows
 - Weekday Baseline -> HTTP Request
 - Holiday DB Fallback -> Code in JavaScript1
 - Slack용 휴가체크 -> Send a message
 - Team용 휴가체크 -> Teams 업무관리(스크럽)에 보내기
+- Filter Today Vacation Rows -> Team용 휴가체크
 
 ## 노드별 역할과 목적
 
@@ -100,15 +100,6 @@
 - 해석 근거: type=n8n-nodes-base.notion
 - Credential: tsupport API
 
-### Filter Today Vacation Rows
-
-- 타입: n8n-nodes-base.code / version=2
-- 역할: Notion 원본 중 오늘 날짜에 해당하는 행만 남깁니다.
-- 필요한 이유: 과거 휴가/반차 이력이 이후 판단 로직에 섞여 들어가지 않도록 하기 위해 필요합니다.
-- 추가 동작: 오늘 날짜 일치 행이 하나도 없을 때는 placeholder item 1건을 넘겨서, 16:30 기본 알림 판단은 계속 진행되도록 유지합니다.
-- 해석 근거: type=n8n-nodes-base.code, date-range filter logic detected
-- Credential: 없음
-
 ### Team용 휴가체크
 
 - 타입: n8n-nodes-base.code / version=2
@@ -122,7 +113,7 @@
 - 타입: n8n-nodes-base.httpRequest / version=4.3
 - 역할: 가공된 결과를 Power Automate 또는 알림용 엔드포인트로 전달합니다.
 - 필요한 이유: 이 노드가 없으면 외부 시스템에서 데이터를 가져오거나 외부로 결과를 보낼 수 없습니다.
-- 해석 근거: type=n8n-nodes-base.httpRequest, redacted repository webhook placeholder detected
+- 해석 근거: type=n8n-nodes-base.httpRequest, url=https://redacted.invalid/powerautomate/daily-scrum-webhook
 - 운영 메모: 저장소 export 는 redacted placeholder 를 유지하고, 실제 배포 시에는 `TS_DAILY_SCRUM_TEAMS_WEBHOOK` 환경 변수로 live webhook 을 주입해야 합니다.
 - Credential: 없음
 
@@ -141,6 +132,15 @@
 - 필요한 이유: 입력, 처리, 출력 단계 중 한 부분을 담당하기 위해 존재합니다.
 - 해석 근거: type=n8n-nodes-base.microsoftSql
 - Credential: TsMgmt(DevTest_SQL2022_26)
+
+### Filter Today Vacation Rows
+
+- 타입: n8n-nodes-base.code / version=2
+- 역할: Notion 원본 중 오늘 날짜에 해당하는 행만 남깁니다.
+- 필요한 이유: 과거 휴가/반차 이력이 이후 판단 로직에 섞여 들어가지 않도록 하기 위해 필요합니다.
+- 추가 동작: 오늘 날짜 일치 행이 하나도 없을 때는 placeholder item 1건을 넘겨서, 16:30 기본 알림 판단은 계속 진행되도록 유지합니다.
+- 해석 근거: type=n8n-nodes-base.code, date-range filter logic detected
+- Credential: 없음
 
 
 ## 외부 시스템 연동

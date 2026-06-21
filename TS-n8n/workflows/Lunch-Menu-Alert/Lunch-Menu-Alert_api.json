@@ -174,7 +174,7 @@
                   {
                       "parameters":  {
                                          "method":  "POST",
-                                         "url":  "https://redacted.invalid/powerautomate/webhook",
+                                         "url":  "https://redacted.invalid/powerautomate/lunch-menu-webhook",
                                          "sendBody":  true,
                                          "contentType":  "json",
                                          "specifyBody":  "json",
