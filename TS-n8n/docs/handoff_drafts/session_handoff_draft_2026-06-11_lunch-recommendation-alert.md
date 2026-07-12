@@ -1,11 +1,11 @@
-# Draft Session Handoff
+﻿# Draft Session Handoff
 
 ## Status
 
 - Topic: `Lunch-Recommendation-Alert`
 - Stage: `superseded`
 - Last updated: `2026-06-11`
-- Confirmed baseline: [session_handoff_2026-06-12.md](D:/kjwook2023/vms/ts-n8n/docs/session_handoff_2026-06-12.md)
+- Confirmed baseline: [session_handoff_2026-06-12.md](../session_handoff_2026-06-12.md)
 
 ## Superseded Note
 

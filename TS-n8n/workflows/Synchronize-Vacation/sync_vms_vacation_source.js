@@ -93,34 +93,51 @@ function toKstDate(date = new Date()) {
   return `${String(parts.year).padStart(4, '0')}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
 }
 
+const SYNC_LOOKBACK_DAYS = 7;
+
+function addDays(date, days) {
+  const next = new Date(date.getTime());
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
 function addMonthsKeepingDay(date, months) {
   const next = new Date(date.getTime());
   next.setUTCMonth(next.getUTCMonth() + months);
   return next;
 }
 
+function buildMonthPairs(startDate, endDate) {
+  const startParts = toKstDateParts(startDate);
+  const endParts = toKstDateParts(endDate);
+  const pairs = [];
+
+  let year = startParts.year;
+  let month = startParts.month;
+  while (year < endParts.year || (year === endParts.year && month <= endParts.month)) {
+    pairs.push({ year, month });
+    month += 1;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
+  }
+
+  return pairs;
+}
+
 function buildSyncWindow() {
   const today = new Date();
-  const startDate = toKstDate(today);
-  const endDate = toKstDate(addMonthsKeepingDay(today, 1));
-  const startParts = toKstDateParts(today);
-  const endParts = toKstDateParts(addMonthsKeepingDay(today, 1));
-  const pairSet = new Set([
-    `${startParts.year}-${startParts.month}`,
-    `${endParts.year}-${endParts.month}`,
-  ]);
-  const monthPairs = [...pairSet].map((value) => {
-    const [year, month] = value.split('-').map(Number);
-    return { year, month };
-  }).sort((a, b) => {
-    if (a.year !== b.year) return a.year - b.year;
-    return a.month - b.month;
-  });
+  const startRef = addDays(today, -SYNC_LOOKBACK_DAYS);
+  const endRef = addMonthsKeepingDay(today, 1);
+  const startDate = toKstDate(startRef);
+  const endDate = toKstDate(endRef);
 
   return {
     startDate,
     endDate,
-    monthPairs,
+    lookbackDays: SYNC_LOOKBACK_DAYS,
+    monthPairs: buildMonthPairs(startRef, endRef),
   };
 }
 

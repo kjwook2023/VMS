@@ -59,6 +59,44 @@ function Invoke-N8nApi {
     return $raw | ConvertFrom-Json
 }
 
+function New-PreparedWorkflowJson {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath
+    )
+
+    $raw = Get-Content -LiteralPath $SourcePath -Raw
+    $workflow = $raw | ConvertFrom-Json
+
+    if ($raw -notmatch "__N8N_GITHUB_CREDENTIAL_NAME__") {
+        return [PSCustomObject]@{
+            Workflow = $workflow
+            BodyFile = $SourcePath
+            TempFile = $null
+        }
+    }
+
+    if (-not $env:N8N_GITHUB_CREDENTIAL_NAME) {
+        throw "N8N_GITHUB_CREDENTIAL_NAME is required when the workflow JSON contains __N8N_GITHUB_CREDENTIAL_NAME__."
+    }
+
+    foreach ($node in $workflow.nodes) {
+        if ($node.credentials -and $node.credentials.githubApi -and $node.credentials.githubApi.name -eq "__N8N_GITHUB_CREDENTIAL_NAME__") {
+            $node.credentials.githubApi.name = $env:N8N_GITHUB_CREDENTIAL_NAME
+        }
+    }
+
+    $tempFile = Join-Path ([System.IO.Path]::GetTempPath()) (([System.IO.Path]::GetRandomFileName()) + ".json")
+    $jsonText = $workflow | ConvertTo-Json -Depth 100
+    [System.IO.File]::WriteAllText($tempFile, $jsonText, (New-Object System.Text.UTF8Encoding($false)))
+
+    return [PSCustomObject]@{
+        Workflow = $workflow
+        BodyFile = $tempFile
+        TempFile = $tempFile
+    }
+}
+
 Set-EnvFromFile -Path $EnvFile
 
 if (-not $env:N8N_BASE_URL) {
@@ -73,7 +111,10 @@ if (-not (Test-Path -LiteralPath $WorkflowJson)) {
     throw "Workflow JSON not found: $WorkflowJson"
 }
 
-$workflow = Get-Content -LiteralPath $WorkflowJson -Raw | ConvertFrom-Json
+$prepared = New-PreparedWorkflowJson -SourcePath $WorkflowJson
+
+try {
+$workflow = $prepared.Workflow
 $workflowName = $workflow.name
 
 if (-not $workflowName) {
@@ -87,7 +128,7 @@ $target = $existing.data | Where-Object { $_.name -eq $workflowName } | Select-O
 
 if ($target) {
     $updateUrl = "$baseUrl/api/v1/workflows/$($target.id)"
-    $result = Invoke-N8nApi -Method PUT -Url $updateUrl -BodyFile $WorkflowJson
+    $result = Invoke-N8nApi -Method PUT -Url $updateUrl -BodyFile $prepared.BodyFile
     [PSCustomObject]@{
         action = "updated"
         id = $result.id
@@ -98,12 +139,18 @@ if ($target) {
 }
 else {
     $createUrl = "$baseUrl/api/v1/workflows"
-    $result = Invoke-N8nApi -Method POST -Url $createUrl -BodyFile $WorkflowJson
+    $result = Invoke-N8nApi -Method POST -Url $createUrl -BodyFile $prepared.BodyFile
     [PSCustomObject]@{
         action = "created"
         id = $result.id
         name = $result.name
         active = $result.active
         updatedAt = $result.updatedAt
+    }
+}
+}
+finally {
+    if ($prepared.TempFile -and (Test-Path -LiteralPath $prepared.TempFile)) {
+        Remove-Item -LiteralPath $prepared.TempFile -Force
     }
 }

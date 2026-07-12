@@ -1,4 +1,4 @@
-# TS-n8n Session Handoff
+﻿# TS-n8n Session Handoff
 
 ## Purpose
 
@@ -14,10 +14,10 @@ Confirmed baseline for the lunch workflow updates completed on `2026-06-11`.
 
 ## Lunch-Recommendation-Alert
 
-- Main design note: [Lunch-Recommendation-Alert.md](D:/kjwook2023/vms/ts-n8n/docs/Lunch-Recommendation-Alert.md)
-- Build script: [build_lunch_recommendation_alert.js](D:/kjwook2023/vms/ts-n8n/scripts/build_lunch_recommendation_alert.js)
-- Workflow JSON: [Lunch-Recommendation-Alert_api.json](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_api.json)
-- Upsert script: [Lunch-Recommendation-Alert_api.ps1](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_api.ps1)
+- Main design note: [Lunch-Recommendation-Alert.md](Lunch-Recommendation-Alert.md)
+- Build script: [build_lunch_recommendation_alert.js](../scripts/build_lunch_recommendation_alert.js)
+- Workflow JSON: [Lunch-Recommendation-Alert_api.json](../workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_api.json)
+- Upsert script: [Lunch-Recommendation-Alert_api.ps1](../workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_api.ps1)
 
 Confirmed implementation:
 
@@ -45,9 +45,9 @@ Residual risks:
 
 ## Lunch-Menu-Alert
 
-- Build script: [build_lunch_menu_alert.js](D:/kjwook2023/vms/ts-n8n/scripts/build_lunch_menu_alert.js)
-- Workflow JSON: [Lunch-Menu-Alert_api.json](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_api.json)
-- Design note: [Lunch-Menu-Alert_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_design.md)
+- Build script: [build_lunch_menu_alert.js](../scripts/build_lunch_menu_alert.js)
+- Workflow JSON: [Lunch-Menu-Alert_api.json](../workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_api.json)
+- Design note: [Lunch-Menu-Alert_design.md](../workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_design.md)
 
 Confirmed update:
 
@@ -56,11 +56,11 @@ Confirmed update:
 
 ## Related Docs Updated
 
-- [Lunch-Recommendation-Alert.md](D:/kjwook2023/vms/ts-n8n/docs/Lunch-Recommendation-Alert.md)
-- [session_handoff_draft_2026-06-11_lunch-recommendation-alert.md](D:/kjwook2023/vms/ts-n8n/docs/handoff_drafts/session_handoff_draft_2026-06-11_lunch-recommendation-alert.md)
-- [Workflow-Notion-Teams-Interface.md](D:/kjwook2023/vms/ts-n8n/docs/Workflow-Notion-Teams-Interface.md)
-- [Lunch-Menu-Alert_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_design.md)
-- [Lunch-Recommendation-Alert_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_design.md)
+- [Lunch-Recommendation-Alert.md](Lunch-Recommendation-Alert.md)
+- [session_handoff_draft_2026-06-11_lunch-recommendation-alert.md](handoff_drafts/session_handoff_draft_2026-06-11_lunch-recommendation-alert.md)
+- [Workflow-Notion-Teams-Interface.md](Workflow-Notion-Teams-Interface.md)
+- [Lunch-Menu-Alert_design.md](../workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_design.md)
+- [Lunch-Recommendation-Alert_design.md](../workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_design.md)
 
 ## Next Resume Point
 

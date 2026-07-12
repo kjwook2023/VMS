@@ -16,7 +16,7 @@
                                                          "foldersToInclude":  [
                                                                                   "AAMkAGUwZTBhZjI5LTgxMjYtNDQ5OS05ZTEyLTVmMTgxYzllMjI0YwAuAAAAAACdMZb9wRBfRYR_0ItO9bHeAQDUqVrk8IEkTqiAUrQoXMR_AAZvvk5IAAA="
                                                                               ],
-                                                         "readStatus":  "both"
+                                                         "readStatus":  "unread"
                                                      },
                                          "options":  {
 
@@ -32,8 +32,8 @@
                       "name":  "신입사원 관련 메일 수신",
                       "credentials":  {
                                           "microsoftOutlookOAuth2Api":  {
-                                                                            "id":  "QrARH25rhyVoJNXv",
-                                                                            "name":  "tsupport"
+                                                                            "id":  "QfudWXK5AulrLxFd",
+                                                                            "name":  "support"
                                                                         }
                                       }
                   },
@@ -179,8 +179,8 @@
                       "webhookId":  "91b18ffe-f7c9-43ab-9591-3f3202315019",
                       "credentials":  {
                                           "microsoftOutlookOAuth2Api":  {
-                                                                            "id":  "QrARH25rhyVoJNXv",
-                                                                            "name":  "tsupport"
+                                                                            "id":  "QfudWXK5AulrLxFd",
+                                                                            "name":  "support"
                                                                         }
                                       }
                   },
@@ -211,8 +211,8 @@
                       "webhookId":  "e578bf17-3bd0-4970-af12-a9dc98ac3f85",
                       "credentials":  {
                                           "microsoftOutlookOAuth2Api":  {
-                                                                            "id":  "QrARH25rhyVoJNXv",
-                                                                            "name":  "tsupport"
+                                                                            "id":  "QfudWXK5AulrLxFd",
+                                                                            "name":  "support"
                                                                         }
                                       }
                   },
@@ -237,8 +237,8 @@
                       "webhookId":  "a2ddf285-aacc-454f-bf2f-e2d062d88182",
                       "credentials":  {
                                           "microsoftOutlookOAuth2Api":  {
-                                                                            "id":  "QrARH25rhyVoJNXv",
-                                                                            "name":  "tsupport"
+                                                                            "id":  "QfudWXK5AulrLxFd",
+                                                                            "name":  "support"
                                                                         }
                                       }
                   },

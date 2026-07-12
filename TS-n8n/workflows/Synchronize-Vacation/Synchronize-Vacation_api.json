@@ -1,702 +1,680 @@
 {
-    "name":  "Synchronize-Vacation",
-    "nodes":  [
-                  {
-                      "parameters":  {
-
-                                     },
-                      "type":  "n8n-nodes-base.manualTrigger",
-                      "typeVersion":  1,
-                      "position":  [
-                                       -1180,
-                                       -80
-                                   ],
-                      "id":  "5e5c98ce-5e5c-5e5c-5e5c-5e5c98ca5e5c98c9",
-                      "name":  "Manual Trigger"
-                  },
-                  {
-                      "parameters":  {
-                                         "rule":  {
-                                                      "interval":  [
-                                                                       {
-                                                                           "field":  "cronExpression",
-                                                                           "expression":  "0 0 6 * * *"
-                                                                       }
-                                                                   ]
-                                                  }
-                                     },
-                      "type":  "n8n-nodes-base.scheduleTrigger",
-                      "typeVersion":  1.3,
-                      "position":  [
-                                       -1180,
-                                       96
-                                   ],
-                      "id":  "55956efd-5595-5595-5595-55956ef955956ef8",
-                      "name":  "Sync Schedule",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "command":  "SYNC_VACATION_EMIT_ERROR_JSON=1 node - \u003c\u003c\u0027EOF\u0027\nglobalThis.__SYNC_VACATION_INLINE_CONFIG__ = {\"baseUrl\":\"https://vms-works.com/\",\"username\":\"jwkim\",\"password\":\"Wlsdnr@123\",\"targets\":[{\"resourceId\":84,\"resourceName\":\"김진욱\"},{\"resourceId\":80,\"resourceName\":\"김민영\"},{\"resourceId\":108,\"resourceName\":\"조현재\"},{\"resourceId\":111,\"resourceName\":\"강군석\"}]};\nconst fs = require(\u0027fs\u0027);\nconst path = require(\u0027path\u0027);\n\nconst injectedConfig = globalThis.__SYNC_VACATION_INLINE_CONFIG__ || null;\nconst workflowDir = typeof __dirname === \u0027string\u0027 ? __dirname : process.cwd();\nconst root = path.resolve(workflowDir, \u0027..\u0027, \u0027..\u0027);\n\nfunction loadEnvFile(envPath) {\n  const env = {};\n  if (!fs.existsSync(envPath)) return env;\n  const text = fs.readFileSync(envPath, \u0027utf8\u0027);\n  for (const line of text.split(/\\r?\\n/)) {\n    if (!line || /^\\s*#/.test(line)) continue;\n    const match = line.match(/^(.*?)=(.*)$/);\n    if (match) env[match[1]] = match[2];\n  }\n  return env;\n}\n\nfunction mergeEnv(...items) {\n  return Object.assign({}, ...items);\n}\n\nfunction getSetCookies(headers) {\n  if (typeof headers.getSetCookie === \u0027function\u0027) {\n    return headers.getSetCookie();\n  }\n  const single = headers.get(\u0027set-cookie\u0027);\n  return single ? [single] : [];\n}\n\nclass CookieJar {\n  constructor() {\n    this.cookies = new Map();\n  }\n\n  setFromResponse(headers) {\n    for (const entry of getSetCookies(headers)) {\n      const first = String(entry || \u0027\u0027).split(\u0027;\u0027)[0];\n      const idx = first.indexOf(\u0027=\u0027);\n      if (idx \u003c= 0) continue;\n      const name = first.slice(0, idx).trim();\n      const value = first.slice(idx + 1).trim();\n      if (!name) continue;\n      this.cookies.set(name, value);\n    }\n  }\n\n  header() {\n    return [...this.cookies.entries()].map(([name, value]) =\u003e `${name}=${value}`).join(\u0027; \u0027);\n  }\n}\n\nfunction parseCsrfToken(html) {\n  const inputMatch = String(html || \u0027\u0027).match(/name=\"csrf_token\"\\s+type=\"hidden\"\\s+value=\"([^\"]+)\"/i);\n  if (inputMatch) return inputMatch[1];\n  const metaMatch = String(html || \u0027\u0027).match(/\u003cmeta\\s+name=\"csrf-token\"\\s+content=\"([^\"]+)\"/i);\n  return metaMatch ? metaMatch[1] : \u0027\u0027;\n}\n\nfunction toKstDateParts(date = new Date()) {\n  const parts = new Intl.DateTimeFormat(\u0027en-CA\u0027, {\n    timeZone: \u0027Asia/Seoul\u0027,\n    year: \u0027numeric\u0027,\n    month: \u00272-digit\u0027,\n    day: \u00272-digit\u0027,\n  }).formatToParts(date);\n  const pick = (type) =\u003e parts.find((part) =\u003e part.type === type)?.value || \u0027\u0027;\n  return {\n    year: Number(pick(\u0027year\u0027)),\n    month: Number(pick(\u0027month\u0027)),\n    day: Number(pick(\u0027day\u0027)),\n  };\n}\n\nfunction toKstTimestamp(date = new Date()) {\n  const parts = new Intl.DateTimeFormat(\u0027en-CA\u0027, {\n    timeZone: \u0027Asia/Seoul\u0027,\n    year: \u0027numeric\u0027,\n    month: \u00272-digit\u0027,\n    day: \u00272-digit\u0027,\n    hour: \u00272-digit\u0027,\n    minute: \u00272-digit\u0027,\n    second: \u00272-digit\u0027,\n    hour12: false,\n  }).formatToParts(date);\n  const pick = (type) =\u003e parts.find((part) =\u003e part.type === type)?.value || \u0027\u0027;\n  return `${pick(\u0027year\u0027)}-${pick(\u0027month\u0027)}-${pick(\u0027day\u0027)} ${pick(\u0027hour\u0027)}:${pick(\u0027minute\u0027)}:${pick(\u0027second\u0027)} KST`;\n}\n\nfunction toKstDate(date = new Date()) {\n  const parts = toKstDateParts(date);\n  return `${String(parts.year).padStart(4, \u00270\u0027)}-${String(parts.month).padStart(2, \u00270\u0027)}-${String(parts.day).padStart(2, \u00270\u0027)}`;\n}\n\nfunction addMonthsKeepingDay(date, months) {\n  const next = new Date(date.getTime());\n  next.setUTCMonth(next.getUTCMonth() + months);\n  return next;\n}\n\nfunction buildSyncWindow() {\n  const today = new Date();\n  const startDate = toKstDate(today);\n  const endDate = toKstDate(addMonthsKeepingDay(today, 1));\n  const startParts = toKstDateParts(today);\n  const endParts = toKstDateParts(addMonthsKeepingDay(today, 1));\n  const pairSet = new Set([\n    `${startParts.year}-${startParts.month}`,\n    `${endParts.year}-${endParts.month}`,\n  ]);\n  const monthPairs = [...pairSet].map((value) =\u003e {\n    const [year, month] = value.split(\u0027-\u0027).map(Number);\n    return { year, month };\n  }).sort((a, b) =\u003e {\n    if (a.year !== b.year) return a.year - b.year;\n    return a.month - b.month;\n  });\n\n  return {\n    startDate,\n    endDate,\n    monthPairs,\n  };\n}\n\nfunction mapTimeSlot(leaveForm) {\n  const text = String(leaveForm || \u0027\u0027);\n  if (text.includes(\u0027\\uC624\\uC804\u0027)) return \u0027\\uC624\\uC804\\uB9CC\u0027;\n  if (text.includes(\u0027\\uC624\\uD6C4\u0027)) return \u0027\\uC624\\uD6C4\\uB9CC\u0027;\n  if (text.includes(\u0027\\uC804\\uC77C\u0027) || text.includes(\u0027\\uD558\\uB8E8\u0027)) return \u0027\\uD558\\uB8E8 \\uC885\\uC77C\u0027;\n  return \u0027\\uD2B9\\uC815 \\uC2DC\\uAC04\\uC5D0\\uB9CC\u0027;\n}\n\nfunction mapTitle(leaveType, resourceName, leaveForm) {\n  if (!leaveForm || leaveForm.includes(\u0027\\uC804\\uC77C\u0027) || leaveForm.includes(\u0027\\uD558\\uB8E8\u0027)) {\n    return `(${leaveType}) ${resourceName}`;\n  }\n  return `(${leaveType}) ${resourceName} - ${leaveForm}`;\n}\n\nasync function fetchText(url, options = {}) {\n  const response = await fetch(url, options);\n  const text = await response.text();\n  return { response, text };\n}\n\nasync function loginAndFetchLeaves(config) {\n  const baseUrl = config.baseUrl.replace(/\\/$/, \u0027\u0027);\n  const loginUrl = `${baseUrl}/auth/login?next=${encodeURIComponent(baseUrl + \u0027/\u0027)}`;\n  const jar = new CookieJar();\n  const syncWindow = buildSyncWindow();\n\n  const loginPage = await fetchText(loginUrl, {\n    method: \u0027GET\u0027,\n    redirect: \u0027manual\u0027,\n    headers: {\n      accept: \u0027text/html,application/xhtml+xml\u0027,\n      \u0027user-agent\u0027: \u0027Synchronize-Vacation/1.0\u0027,\n    },\n  });\n  jar.setFromResponse(loginPage.response.headers);\n\n  if (!loginPage.response.ok) {\n    throw new Error(`Failed to load VMS Works login page: ${loginPage.response.status}`);\n  }\n\n  const loginCsrf = parseCsrfToken(loginPage.text);\n  if (!loginCsrf) {\n    throw new Error(\u0027Failed to read login csrf token from VMS Works.\u0027);\n  }\n\n  const form = new URLSearchParams();\n  form.set(\u0027csrf_token\u0027, loginCsrf);\n  form.set(\u0027username\u0027, config.username);\n  form.set(\u0027password\u0027, config.password);\n  form.set(\u0027remember_me\u0027, \u0027y\u0027);\n\n  const loginResponse = await fetch(loginUrl, {\n    method: \u0027POST\u0027,\n    redirect: \u0027manual\u0027,\n    headers: {\n      accept: \u0027text/html,application/xhtml+xml\u0027,\n      \u0027content-type\u0027: \u0027application/x-www-form-urlencoded\u0027,\n      origin: baseUrl,\n      referer: loginUrl,\n      cookie: jar.header(),\n      \u0027user-agent\u0027: \u0027Synchronize-Vacation/1.0\u0027,\n    },\n    body: form.toString(),\n  });\n  jar.setFromResponse(loginResponse.headers);\n\n  if (loginResponse.status !== 302) {\n    const body = await loginResponse.text();\n    throw new Error(`VMS Works login failed: ${loginResponse.status} ${body.slice(0, 240)}`);\n  }\n\n  const home = await fetchText(`${baseUrl}/`, {\n    method: \u0027GET\u0027,\n    headers: {\n      accept: \u0027text/html,application/xhtml+xml\u0027,\n      cookie: jar.header(),\n      referer: loginUrl,\n      \u0027user-agent\u0027: \u0027Synchronize-Vacation/1.0\u0027,\n    },\n  });\n  jar.setFromResponse(home.response.headers);\n\n  if (!home.response.ok) {\n    throw new Error(`Failed to open VMS Works home after login: ${home.response.status}`);\n  }\n\n  const apiCsrf = parseCsrfToken(home.text);\n  if (!apiCsrf) {\n    throw new Error(\u0027Failed to read API csrf token from VMS Works home page.\u0027);\n  }\n\n  const targetById = new Map(config.targets.map((target) =\u003e [target.resourceId, target]));\n  const dedup = new Map();\n\n  for (const pair of syncWindow.monthPairs) {\n    const url = `${baseUrl}/reports/resource/leave-calendar/data?year=${pair.year}\u0026month=${pair.month}\u0026org_id=25`;\n    const response = await fetch(url, {\n      method: \u0027GET\u0027,\n      headers: {\n        accept: \u0027application/json, text/plain, */*\u0027,\n        cookie: jar.header(),\n        referer: `${baseUrl}/`,\n        origin: baseUrl,\n        \u0027x-csrftoken\u0027: apiCsrf,\n        \u0027x-requested-with\u0027: \u0027XMLHttpRequest\u0027,\n        \u0027user-agent\u0027: \u0027Synchronize-Vacation/1.0\u0027,\n      },\n    });\n\n    const text = await response.text();\n    if (!response.ok) {\n      throw new Error(`Leave calendar fetch failed for ${pair.year}-${String(pair.month).padStart(2, \u00270\u0027)}: ${response.status} ${text.slice(0, 240)}`);\n    }\n\n    let payload;\n    try {\n      payload = JSON.parse(text);\n    } catch (error) {\n      throw new Error(`Failed to parse leave calendar payload for ${pair.year}-${pair.month}: ${error.message}`);\n    }\n\n    const leavesByDate = payload?.leaves_by_date \u0026\u0026 typeof payload.leaves_by_date === \u0027object\u0027\n      ? payload.leaves_by_date\n      : {};\n\n    for (const leaves of Object.values(leavesByDate)) {\n      if (!Array.isArray(leaves)) continue;\n      for (const leave of leaves) {\n        const resourceId = Number(leave?.resource_id);\n        if (!targetById.has(resourceId)) continue;\n\n        const resourceName = String(leave?.resource_name || targetById.get(resourceId)?.resourceName || \u0027\u0027).trim();\n        const startDate = String(leave?.start_date || \u0027\u0027).trim();\n        const endDate = String(leave?.end_date || leave?.start_date || \u0027\u0027).trim();\n        const leaveType = String(leave?.leave_type || \u0027\u0027).trim();\n        const leaveForm = String(leave?.leave_form || \u0027\u0027).trim();\n        const period = String(leave?.period || \u0027\u0027).trim();\n\n        if (!resourceName || !startDate || !leaveType || !leaveForm) continue;\n        if (endDate \u003c syncWindow.startDate) continue;\n        if (startDate \u003e syncWindow.endDate) continue;\n\n        const syncKey = [resourceId, startDate, endDate, leaveType, leaveForm].join(\u0027:\u0027);\n        if (dedup.has(syncKey)) continue;\n\n        dedup.set(syncKey, {\n          syncKey,\n          resourceId,\n          resourceName,\n          startDate,\n          endDate,\n          leaveType,\n          leaveForm,\n          period,\n          timeSlot: mapTimeSlot(leaveForm),\n          title: mapTitle(leaveType, resourceName, leaveForm),\n        });\n      }\n    }\n  }\n\n  return {\n    items: [...dedup.values()].sort((a, b) =\u003e {\n      const byStart = a.startDate.localeCompare(b.startDate);\n      if (byStart !== 0) return byStart;\n      const byName = a.resourceName.localeCompare(b.resourceName);\n      if (byName !== 0) return byName;\n      return a.syncKey.localeCompare(b.syncKey);\n    }),\n    syncWindow,\n  };\n}\n\nasync function main() {\n  const localEnv = injectedConfig ? {} : loadEnvFile(path.join(workflowDir, \u0027.env\u0027));\n  const sharedEnv = injectedConfig ? {} : loadEnvFile(path.join(root, \u0027credentials\u0027, \u0027vmsworks\u0027, \u0027vmsworks.env\u0027));\n  const env = mergeEnv(sharedEnv, localEnv, process.env);\n\n  const config = injectedConfig || {\n    baseUrl: env.VMS_WORKS_ADDRESS || \u0027https://vms-works.com/\u0027,\n    username: env.VMS_WORKS_ID || \u0027\u0027,\n    password: env.VMS_WORKS_PW || \u0027\u0027,\n    targets: [\n      { resourceId: 84, resourceName: \u0027\\uAE40\\uC9C4\\uC6B1\u0027 },\n      { resourceId: 80, resourceName: \u0027\\uAE40\\uBBFC\\uC601\u0027 },\n      { resourceId: 108, resourceName: \u0027\\uC870\\uD604\\uC7AC\u0027 },\n      { resourceId: 111, resourceName: \u0027\\uAC15\\uAD70\\uC11D\u0027 },\n    ],\n  };\n\n  if (!config.username || !config.password) {\n    throw new Error(\u0027VMS Works login credentials are missing.\u0027);\n  }\n\n  const result = await loginAndFetchLeaves(config);\n  const output = {\n    managedBy: \u0027Synchronize-Vacation\u0027,\n    generatedAtKst: toKstTimestamp(),\n    syncWindow: result.syncWindow,\n    targetUsers: config.targets,\n    items: result.items,\n  };\n\n  process.stdout.write(`${JSON.stringify(output)}\\n`);\n}\n\nmain().catch((error) =\u003e {\n  if (process.env.SYNC_VACATION_EMIT_ERROR_JSON === \u00271\u0027) {\n    process.stdout.write(`${JSON.stringify({\n      managedBy: \u0027Synchronize-Vacation\u0027,\n      generatedAtKst: toKstTimestamp(),\n      syncWindow: {},\n      targetUsers: [\n        { resourceId: 84, resourceName: \u0027\\uAE40\\uC9C4\\uC6B1\u0027 },\n        { resourceId: 80, resourceName: \u0027\\uAE40\\uBBFC\\uC601\u0027 },\n        { resourceId: 108, resourceName: \u0027\\uC870\\uD604\\uC7AC\u0027 },\n        { resourceId: 111, resourceName: \u0027\\uAC15\\uAD70\\uC11D\u0027 },\n      ],\n      items: [],\n      ok: false,\n      errorMessage: String(error.message || error),\n    })}\\n`);\n    process.exit(0);\n  }\n  process.stderr.write(`${error.stack || error.message}\\n`);\n  process.exit(1);\n});\n\nEOF"
-                                     },
-                      "type":  "n8n-nodes-base.executeCommand",
-                      "typeVersion":  1,
-                      "position":  [
-                                       -920,
-                                       16
-                                   ],
-                      "id":  "0978678c-0978-0978-0978-0978678809786787",
-                      "name":  "Fetch Vacation Source",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const rawStdout = $json.stdout ?? \u0027\u0027;\nconst rawStderr = $json.stderr ?? \u0027\u0027;\nconst exitCode = Number($json.exitCode ?? 0);\nif (exitCode !== 0) {\n  throw new Error(\u0027Vacation source script failed with exit code \u0027 + exitCode + \u0027. \u0027 + rawStderr);\n}\nif (!String(rawStdout).trim()) {\n  throw new Error(\u0027Vacation source script returned empty stdout.\u0027);\n}\nlet payload;\ntry {\n  payload = JSON.parse(rawStdout);\n} catch (error) {\n  throw new Error(\u0027Failed to parse vacation source JSON: \u0027 + error.message);\n}\nconst items = Array.isArray(payload.items) ? payload.items : [];\nreturn [{\n  json: {\n    managedBy: String(payload.managedBy || \u0027Synchronize-Vacation\u0027),\n    generatedAtKst: String(payload.generatedAtKst || \u0027\u0027),\n    syncWindow: payload.syncWindow \u0026\u0026 typeof payload.syncWindow === \u0027object\u0027 ? payload.syncWindow : {},\n    sourceOk: payload.ok === false ? false : true,\n    errorMessage: String(payload.errorMessage || \u0027\u0027),\n    totalItems: items.length,\n    targetUsers: Array.isArray(payload.targetUsers) ? payload.targetUsers : [],\n    items,\n  }\n}];"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       -656,
-                                       16
-                                   ],
-                      "id":  "4d439b0a-4d43-4d43-4d43-4d439b064d439b05",
-                      "name":  "Parse Vacation Source",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "method":  "POST",
-                                         "url":  "https://api.notion.com/v1/databases/205cb995-8309-80e4-ac2a-c8589a1783eb/query",
-                                         "authentication":  "predefinedCredentialType",
-                                         "nodeCredentialType":  "notionApi",
-                                         "sendBody":  true,
-                                         "contentType":  "json",
-                                         "specifyBody":  "json",
-                                         "jsonBody":  "={{ ({ page_size: 100, sorts: [{ property: \u0027Date\u0027, direction: \u0027descending\u0027 }] }) }}",
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.httpRequest",
-                      "typeVersion":  4.3,
-                      "position":  [
-                                       -392,
-                                       16
-                                   ],
-                      "id":  "3ba66eac-3ba6-3ba6-3ba6-3ba66ea83ba66ea7",
-                      "name":  "Load Notion Calendar",
-                      "alwaysOutputData":  true,
-                      "credentials":  {
-                                          "notionApi":  {
-                                                            "id":  "LrLyYGhPvHMbPfZm",
-                                                            "name":  "tsupport API"
-                                                        }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const source = $(\u0027Parse Vacation Source\u0027).first()?.json ?? {};\nconst notionPayload = $(\u0027Load Notion Calendar\u0027).first()?.json ?? {};\nconst notionPages = Array.isArray(notionPayload.results) ? notionPayload.results : [];\nconst payloadItems = Array.isArray(source.items) ? source.items : [];\nconst syncWindow = source.syncWindow \u0026\u0026 typeof source.syncWindow === \u0027object\u0027 ? source.syncWindow : {};\nconst windowStart = String(syncWindow.startDate || \u0027\u0027);\nconst windowEnd = String(syncWindow.endDate || \u0027\u0027);\nconst managedBy = String(source.managedBy || \u0027Synchronize-Vacation\u0027);\nconst managedMarker = \u0027managed_by=\u0027 + managedBy;\nconst legacyManagedMarker = \u0027managed_by=Synchorize-Vacation\u0027;\nconst legacyUpdatedByMarker = \u0027Updated_by=Synchroniz-Vacation\u0027;\nconst updatedByMarker = \u0027Updated_by=Synchronize-Vacation\u0027;\nif (source.sourceOk === false) {\n  return [{ json: { action: \u0027source_error\u0027, ok: false, title: \u0027Source Error\u0027, errorMessage: String(source.errorMessage || \u0027Vacation source fetch failed.\u0027) } }];\n}\nconst K = {\n  title: \u0027Title\u0027,\n  date: \u0027Date\u0027,\n  description: \u0027Description\u0027,\n  tag: \u0027\\uD0DC\\uADF8\u0027,\n  person: \u0027\\uC0AC\\uB78C\u0027,\n  timeSlot: \u0027\\uC2DC\\uAC04\\uB300\u0027,\n  vacationTag: \u0027\\uD734\\uAC00\u0027,\n  allDay: \u0027\\uD558\\uB8E8 \\uC885\\uC77C\u0027,\n  morning: \u0027\\uC624\\uC804\\uB9CC\u0027,\n  afternoon: \u0027\\uC624\\uD6C4\\uB9CC\u0027,\n  partial: \u0027\\uD2B9\\uC815 \\uC2DC\\uAC04\\uC5D0\\uB9CC\u0027,\n};\nfunction normalize(value) { return String(value ?? \u0027\u0027).normalize(\u0027NFC\u0027).trim(); }\nfunction pickPlainText(richText) { return Array.isArray(richText) ? richText.map((entry) =\u003e entry?.plain_text || entry?.text?.content || \u0027\u0027).join(\u0027\u0027) : \u0027\u0027; }\nfunction propText(page, name) {\n  const prop = page?.properties?.[name];\n  if (!prop) return \u0027\u0027;\n  if (prop.type === \u0027rich_text\u0027) return pickPlainText(prop.rich_text);\n  if (prop.type === \u0027title\u0027) return pickPlainText(prop.title);\n  if (prop.type === \u0027select\u0027) return normalize(prop.select?.name);\n  if (prop.type === \u0027multi_select\u0027) return (prop.multi_select || []).map((entry) =\u003e normalize(entry?.name)).join(\u0027,\u0027);\n  if (prop.type === \u0027date\u0027) return normalize(prop.date?.start);\n  return \u0027\u0027;\n}\nfunction propDate(page) {\n  const prop = page?.properties?.[K.date];\n  return prop?.date ? { start: String(prop.date.start || \u0027\u0027), end: String(prop.date.end || prop.date.start || \u0027\u0027) } : { start: \u0027\u0027, end: \u0027\u0027 };\n}\nfunction buildMatchKeyFromSource(item) {\n  return [String(item.title || \u0027\u0027), String(item.startDate || \u0027\u0027), String(item.endDate || item.startDate || \u0027\u0027), String(item.resourceName || \u0027\u0027)].join(\u0027|\u0027);\n}\nfunction buildMatchKeyFromPage(page) {\n  const currentDate = propDate(page);\n  return [propText(page, K.title), currentDate.start, currentDate.end || currentDate.start, propText(page, K.person)].join(\u0027|\u0027);\n}\nfunction overlapsWindow(start, end) {\n  if (!windowStart || !windowEnd || !start) return false;\n  const realEnd = end || start;\n  return !(realEnd \u003c windowStart || start \u003e windowEnd);\n}\nfunction buildDescription(item) {\n  return updatedByMarker;\n}\nfunction buildProperties(item) {\n  const description = buildDescription(item);\n  return {\n    [K.title]: { title: [{ text: { content: item.title } }] },\n    [K.date]: { date: { start: item.startDate, end: item.endDate || item.startDate } },\n    [K.description]: { rich_text: [{ text: { content: description } }] },\n    [K.tag]: { select: { name: K.vacationTag } },\n    [K.timeSlot]: { select: { name: item.timeSlot || K.allDay } },\n    [K.person]: { multi_select: [{ name: item.resourceName }] },\n  };\n}\nconst expectedMap = new Map();\nfor (const item of payloadItems) {\n  const matchKey = buildMatchKeyFromSource(item);\n  expectedMap.set(matchKey, { ...item, matchKey, properties: buildProperties(item), description: buildDescription(item) });\n}\nconst existingManaged = notionPages.filter((page) =\u003e {\n  const description = propText(page, K.description);\n  if (!(description.includes(managedMarker) || description.includes(legacyManagedMarker) || description.includes(updatedByMarker) || description.includes(legacyUpdatedByMarker))) return false;\n  const currentDate = propDate(page);\n  return overlapsWindow(currentDate.start, currentDate.end);\n});\nconst existingMap = new Map();\nfor (const page of existingManaged) {\n  const matchKey = buildMatchKeyFromPage(page);\n  if (!matchKey) continue;\n  existingMap.set(matchKey, page);\n}\nconst actions = [];\nfor (const [matchKey, item] of expectedMap.entries()) {\n  const existing = existingMap.get(matchKey);\n  if (!existing) {\n    actions.push({ json: { action: \u0027create\u0027, matchKey, syncKey: item.syncKey, title: item.title, properties: item.properties } });\n    continue;\n  }\n  const currentDate = propDate(existing);\n  const currentTitle = propText(existing, K.title);\n  const currentDescription = propText(existing, K.description);\n  const currentTimeSlot = propText(existing, K.timeSlot);\n  const currentTag = propText(existing, K.tag);\n  const currentPerson = propText(existing, K.person);\n  const needsUpdate = [\n    currentTitle !== item.title,\n    currentDate.start !== item.startDate,\n    (currentDate.end || currentDate.start) !== (item.endDate || item.startDate),\n    currentDescription !== item.description,\n    currentTimeSlot !== item.timeSlot,\n    currentTag !== K.vacationTag,\n    currentPerson !== item.resourceName,\n  ].some(Boolean);\n  if (needsUpdate) {\n    actions.push({ json: { action: \u0027update\u0027, matchKey, syncKey: item.syncKey, pageId: existing.id, title: item.title, properties: item.properties } });\n  }\n}\nfor (const [matchKey, page] of existingMap.entries()) {\n  if (expectedMap.has(matchKey)) continue;\n  if (page.archived) continue;\n  actions.push({ json: { action: \u0027archive\u0027, matchKey, pageId: page.id, title: propText(page, K.title) || matchKey } });\n};\nif (actions.length === 0) {\n  return [{ json: { action: \u0027noop\u0027, ok: true, syncKey: \u0027none\u0027, title: \u0027No changes\u0027, summary: { expectedCount: expectedMap.size, existingManagedCount: existingMap.size } } }];\n}\nreturn actions;"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       -128,
-                                       16
-                                   ],
-                      "id":  "4069ea03-4069-4069-4069-4069e9ff4069e9fe",
-                      "name":  "Build Notion Sync Plan",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "conditions":  {
-                                                            "options":  {
-                                                                            "caseSensitive":  true,
-                                                                            "leftValue":  "",
-                                                                            "typeValidation":  "strict",
-                                                                            "version":  2
-                                                                        },
-                                                            "conditions":  [
-                                                                               {
-                                                                                   "id":  "60198885-6019-6019-6019-6019888160198880",
-                                                                                   "leftValue":  "={{ $json.action }}",
-                                                                                   "rightValue":  "create",
-                                                                                   "operator":  {
-                                                                                                    "type":  "string",
-                                                                                                    "operation":  "equals"
-                                                                                                }
-                                                                               }
-                                                                           ],
-                                                            "combinator":  "and"
-                                                        },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.if",
-                      "typeVersion":  2.2,
-                      "position":  [
-                                       128,
-                                       -176
-                                   ],
-                      "id":  "3c03c8d3-3c03-3c03-3c03-3c03c8cf3c03c8ce",
-                      "name":  "If Create",
-                      "alwaysOutputData":  false
-                  },
-                  {
-                      "parameters":  {
-                                         "method":  "POST",
-                                         "url":  "https://api.notion.com/v1/pages",
-                                         "authentication":  "predefinedCredentialType",
-                                         "nodeCredentialType":  "notionApi",
-                                         "sendBody":  true,
-                                         "contentType":  "json",
-                                         "specifyBody":  "json",
-                                         "jsonBody":  "={{ ({ parent: { database_id: \u0027205cb995-8309-80e4-ac2a-c8589a1783eb\u0027 }, properties: $json.properties }) }}",
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.httpRequest",
-                      "typeVersion":  4.3,
-                      "position":  [
-                                       384,
-                                       -176
-                                   ],
-                      "id":  "4dfbfbbf-4dfb-4dfb-4dfb-4dfbfbbb4dfbfbba",
-                      "name":  "Create Notion Page",
-                      "alwaysOutputData":  true,
-                      "onError":  "continueRegularOutput",
-                      "credentials":  {
-                                          "notionApi":  {
-                                                            "id":  "LrLyYGhPvHMbPfZm",
-                                                            "name":  "tsupport API"
-                                                        }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const planned = $(\u0027If Create\u0027).item.json ?? {};\nconst response = $json ?? {};\nconst hasId = Boolean(response.id);\nconst message = response.error?.message || response.message || response.error || \u0027\u0027;\nreturn [{ json: {\n  action: String(planned.action || \u0027\u0027),\n  ok: hasId,\n  title: String(planned.title || planned.syncKey || \u0027\u0027),\n  errorMessage: hasId ? \u0027\u0027 : String(message || \u0027Notion request failed.\u0027),\n} }];"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       640,
-                                       -176
-                                   ],
-                      "id":  "44bbc18f-44bb-44bb-44bb-44bbc19344bbc194",
-                      "name":  "Create Result",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "conditions":  {
-                                                            "options":  {
-                                                                            "caseSensitive":  true,
-                                                                            "leftValue":  "",
-                                                                            "typeValidation":  "strict",
-                                                                            "version":  2
-                                                                        },
-                                                            "conditions":  [
-                                                                               {
-                                                                                   "id":  "53149f0f-5314-5314-5314-53149f0b53149f0a",
-                                                                                   "leftValue":  "={{ $json.action }}",
-                                                                                   "rightValue":  "update",
-                                                                                   "operator":  {
-                                                                                                    "type":  "string",
-                                                                                                    "operation":  "equals"
-                                                                                                }
-                                                                               }
-                                                                           ],
-                                                            "combinator":  "and"
-                                                        },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.if",
-                      "typeVersion":  2.2,
-                      "position":  [
-                                       128,
-                                       16
-                                   ],
-                      "id":  "1d693106-1d69-1d69-1d69-1d6931021d693101",
-                      "name":  "If Update",
-                      "alwaysOutputData":  false
-                  },
-                  {
-                      "parameters":  {
-                                         "method":  "PATCH",
-                                         "url":  "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
-                                         "authentication":  "predefinedCredentialType",
-                                         "nodeCredentialType":  "notionApi",
-                                         "sendBody":  true,
-                                         "contentType":  "json",
-                                         "specifyBody":  "json",
-                                         "jsonBody":  "={{ ({ properties: $json.properties }) }}",
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.httpRequest",
-                      "typeVersion":  4.3,
-                      "position":  [
-                                       384,
-                                       16
-                                   ],
-                      "id":  "52bebb6c-52be-52be-52be-52bebb6852bebb67",
-                      "name":  "Update Notion Page",
-                      "alwaysOutputData":  true,
-                      "onError":  "continueRegularOutput",
-                      "credentials":  {
-                                          "notionApi":  {
-                                                            "id":  "LrLyYGhPvHMbPfZm",
-                                                            "name":  "tsupport API"
-                                                        }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const planned = $(\u0027If Update\u0027).item.json ?? {};\nconst response = $json ?? {};\nconst hasId = Boolean(response.id);\nconst message = response.error?.message || response.message || response.error || \u0027\u0027;\nreturn [{ json: {\n  action: String(planned.action || \u0027\u0027),\n  ok: hasId,\n  title: String(planned.title || planned.syncKey || \u0027\u0027),\n  errorMessage: hasId ? \u0027\u0027 : String(message || \u0027Notion request failed.\u0027),\n} }];"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       640,
-                                       16
-                                   ],
-                      "id":  "65aa3922-65aa-65aa-65aa-65aa392665aa3927",
-                      "name":  "Update Result",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "conditions":  {
-                                                            "options":  {
-                                                                            "caseSensitive":  true,
-                                                                            "leftValue":  "",
-                                                                            "typeValidation":  "strict",
-                                                                            "version":  2
-                                                                        },
-                                                            "conditions":  [
-                                                                               {
-                                                                                   "id":  "55c24f8a-55c2-55c2-55c2-55c24f8655c24f85",
-                                                                                   "leftValue":  "={{ $json.action }}",
-                                                                                   "rightValue":  "archive",
-                                                                                   "operator":  {
-                                                                                                    "type":  "string",
-                                                                                                    "operation":  "equals"
-                                                                                                }
-                                                                               }
-                                                                           ],
-                                                            "combinator":  "and"
-                                                        },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.if",
-                      "typeVersion":  2.2,
-                      "position":  [
-                                       128,
-                                       208
-                                   ],
-                      "id":  "51a51093-51a5-51a5-51a5-51a5109751a51098",
-                      "name":  "If Archive",
-                      "alwaysOutputData":  false
-                  },
-                  {
-                      "parameters":  {
-                                         "method":  "PATCH",
-                                         "url":  "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
-                                         "authentication":  "predefinedCredentialType",
-                                         "nodeCredentialType":  "notionApi",
-                                         "sendBody":  true,
-                                         "contentType":  "json",
-                                         "specifyBody":  "json",
-                                         "jsonBody":  "={{ ({ archived: true }) }}",
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.httpRequest",
-                      "typeVersion":  4.3,
-                      "position":  [
-                                       384,
-                                       208
-                                   ],
-                      "id":  "0ce8593b-0ce8-0ce8-0ce8-0ce8593f0ce85940",
-                      "name":  "Archive Notion Page",
-                      "alwaysOutputData":  true,
-                      "onError":  "continueRegularOutput",
-                      "credentials":  {
-                                          "notionApi":  {
-                                                            "id":  "LrLyYGhPvHMbPfZm",
-                                                            "name":  "tsupport API"
-                                                        }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const planned = $(\u0027If Archive\u0027).item.json ?? {};\nconst response = $json ?? {};\nconst hasId = Boolean(response.id);\nconst message = response.error?.message || response.message || response.error || \u0027\u0027;\nreturn [{ json: {\n  action: String(planned.action || \u0027\u0027),\n  ok: hasId,\n  title: String(planned.title || planned.syncKey || \u0027\u0027),\n  errorMessage: hasId ? \u0027\u0027 : String(message || \u0027Notion request failed.\u0027),\n} }];"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       640,
-                                       208
-                                   ],
-                      "id":  "77dec009-77de-77de-77de-77dec00d77dec00e",
-                      "name":  "Archive Result",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const item = $input.first()?.json ?? {};\nconst action = String(item.action || \u0027noop\u0027);\nreturn [{ json: {\n  action,\n  ok: action !== \u0027source_error\u0027,\n  title: String(item.title || action),\n  errorMessage: String(item.errorMessage || \u0027\u0027),\n} }];"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       384,
-                                       400
-                                   ],
-                      "id":  "76bb4b97-76bb-76bb-76bb-76bb4b9376bb4b92",
-                      "name":  "Noop Result",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "mode":  "append"
-                                     },
-                      "type":  "n8n-nodes-base.merge",
-                      "typeVersion":  3.2,
-                      "position":  [
-                                       896,
-                                       -80
-                                   ],
-                      "id":  "7a871f8d-7a87-7a87-7a87-7a871f917a871f92",
-                      "name":  "Merge Action Results A",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "mode":  "append"
-                                     },
-                      "type":  "n8n-nodes-base.merge",
-                      "typeVersion":  3.2,
-                      "position":  [
-                                       896,
-                                       240
-                                   ],
-                      "id":  "7a871f8e-7a87-7a87-7a87-7a871f927a871f93",
-                      "name":  "Merge Action Results B",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "mode":  "append"
-                                     },
-                      "type":  "n8n-nodes-base.merge",
-                      "typeVersion":  3.2,
-                      "position":  [
-                                       1160,
-                                       80
-                                   ],
-                      "id":  "7a871f8f-7a87-7a87-7a87-7a871f937a871f94",
-                      "name":  "Merge All Results",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const results = $input.all().map((item) =\u003e item.json ?? {});\nconst now = new Date();\nconst parts = new Intl.DateTimeFormat(\u0027en-CA\u0027, { timeZone: \u0027Asia/Seoul\u0027, year: \u0027numeric\u0027, month: \u00272-digit\u0027, day: \u00272-digit\u0027, hour: \u00272-digit\u0027, minute: \u00272-digit\u0027, second: \u00272-digit\u0027, hour12: false }).formatToParts(now);\nconst pick = (type) =\u003e parts.find((part) =\u003e part.type === type)?.value || \u0027\u0027;\nconst executedAt = pick(\u0027year\u0027) + \u0027-\u0027 + pick(\u0027month\u0027) + \u0027-\u0027 + pick(\u0027day\u0027) + \u0027 \u0027 + pick(\u0027hour\u0027) + \u0027:\u0027 + pick(\u0027minute\u0027) + \u0027:\u0027 + pick(\u0027second\u0027) + \u0027 KST\u0027;\nconst errorItem = results.find((item) =\u003e item.ok === false);\nconst isError = Boolean(errorItem);\nconst workflowLink = \"https://n8n.vmsmozart-test.com:8443/workflow/17Zl9pkIzYbHX315\";\nconst titleText = `[Synchronize-Vacation](${workflowLink}) 실행 결과 - ${isError ? \u0027오류\u0027 : \u0027정상\u0027}`;\nconst bodyText = `실행일: ${executedAt}${isError \u0026\u0026 errorItem?.errorMessage ? \u0027\\n오류: \u0027 + String(errorItem.errorMessage) : \u0027\u0027}`;\nconst entities = isError ? [{ type: \u0027mention\u0027, text: \u0027\u003cat\u003e김진욱\u003c/at\u003e\u0027, mentioned: { id: \u0027jwkim@vms-solutions.com\u0027, name: \u0027김진욱\u0027 } }] : [];\nconst heading = isError ? \u0027\u003cat\u003e김진욱\u003c/at\u003e 님, \u0027 + titleText : titleText;\nreturn [{ json: {\n  isError,\n  entities,\n  heading,\n  bodyText,\n} }];"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       1416,
-                                       80
-                                   ],
-                      "id":  "3a20363d-3a20-3a20-3a20-3a2036413a203642",
-                      "name":  "Build Monitor Payload",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "method":  "POST",
-                                         "url":  "https://redacted.invalid/powerautomate/webhook",
-                                         "sendBody":  true,
-                                         "contentType":  "json",
-                                         "specifyBody":  "json",
-                                         "bodyParameters":  {
-                                                                "parameters":  [
-                                                                                   {
-
-                                                                                   }
-                                                                               ]
-                                                            },
-                                         "jsonBody":  "={{ ({ type: \u0027message\u0027, attachments: [{ contentType: \u0027application/vnd.microsoft.card.adaptive\u0027, content: { type: \u0027AdaptiveCard\u0027, body: [{ type: \u0027TextBlock\u0027, text: $json.heading, wrap: true, weight: \u0027Bolder\u0027 }, { type: \u0027TextBlock\u0027, text: $json.bodyText, wrap: true, spacing: \u0027Small\u0027 }], msteams: { entities: Array.isArray($json.entities) ? $json.entities : [] }, \u0027$schema\u0027: \u0027http://adaptivecards.io/schemas/adaptive-card.json\u0027, version: \u00271.4\u0027 } }] }) }}",
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.httpRequest",
-                      "typeVersion":  4.3,
-                      "position":  [
-                                       1672,
-                                       80
-                                   ],
-                      "id":  "5d2f3f7b-5d2f-5d2f-5d2f-5d2f3f775d2f3f76",
-                      "name":  "Monitor Teams Webhook",
-                      "alwaysOutputData":  true
-                  }
-              ],
-    "connections":  {
-                        "Manual Trigger":  {
-                                               "main":  [
-                                                            [
-                                                                {
-                                                                    "node":  "Fetch Vacation Source",
-                                                                    "type":  "main",
-                                                                    "index":  0
-                                                                }
-                                                            ]
-                                                        ]
-                                           },
-                        "Sync Schedule":  {
-                                              "main":  [
-                                                           [
-                                                               {
-                                                                   "node":  "Fetch Vacation Source",
-                                                                   "type":  "main",
-                                                                   "index":  0
-                                                               }
-                                                           ]
-                                                       ]
-                                          },
-                        "Fetch Vacation Source":  {
-                                                      "main":  [
-                                                                   [
-                                                                       {
-                                                                           "node":  "Parse Vacation Source",
-                                                                           "type":  "main",
-                                                                           "index":  0
-                                                                       }
-                                                                   ]
-                                                               ]
-                                                  },
-                        "Parse Vacation Source":  {
-                                                      "main":  [
-                                                                   [
-                                                                       {
-                                                                           "node":  "Load Notion Calendar",
-                                                                           "type":  "main",
-                                                                           "index":  0
-                                                                       }
-                                                                   ]
-                                                               ]
-                                                  },
-                        "Load Notion Calendar":  {
-                                                     "main":  [
-                                                                  [
-                                                                      {
-                                                                          "node":  "Build Notion Sync Plan",
-                                                                          "type":  "main",
-                                                                          "index":  0
-                                                                      }
-                                                                  ]
-                                                              ]
-                                                 },
-                        "Build Notion Sync Plan":  {
-                                                       "main":  [
-                                                                    [
-                                                                        {
-                                                                            "node":  "If Create",
-                                                                            "type":  "main",
-                                                                            "index":  0
-                                                                        }
-                                                                    ]
-                                                                ]
-                                                   },
-                        "If Create":  {
-                                          "main":  [
-                                                       [
-                                                           {
-                                                               "node":  "Create Notion Page",
-                                                               "type":  "main",
-                                                               "index":  0
-                                                           }
-                                                       ],
-                                                       [
-                                                           {
-                                                               "node":  "If Update",
-                                                               "type":  "main",
-                                                               "index":  0
-                                                           }
-                                                       ]
-                                                   ]
-                                      },
-                        "Create Notion Page":  {
-                                                   "main":  [
-                                                                [
-                                                                    {
-                                                                        "node":  "Create Result",
-                                                                        "type":  "main",
-                                                                        "index":  0
-                                                                    }
-                                                                ]
-                                                            ]
-                                               },
-                        "If Update":  {
-                                          "main":  [
-                                                       [
-                                                           {
-                                                               "node":  "Update Notion Page",
-                                                               "type":  "main",
-                                                               "index":  0
-                                                           }
-                                                       ],
-                                                       [
-                                                           {
-                                                               "node":  "If Archive",
-                                                               "type":  "main",
-                                                               "index":  0
-                                                           }
-                                                       ]
-                                                   ]
-                                      },
-                        "Update Notion Page":  {
-                                                   "main":  [
-                                                                [
-                                                                    {
-                                                                        "node":  "Update Result",
-                                                                        "type":  "main",
-                                                                        "index":  0
-                                                                    }
-                                                                ]
-                                                            ]
-                                               },
-                        "If Archive":  {
-                                           "main":  [
-                                                        [
-                                                            {
-                                                                "node":  "Archive Notion Page",
-                                                                "type":  "main",
-                                                                "index":  0
-                                                            }
-                                                        ],
-                                                        [
-                                                            {
-                                                                "node":  "Noop Result",
-                                                                "type":  "main",
-                                                                "index":  0
-                                                            }
-                                                        ]
-                                                    ]
-                                       },
-                        "Archive Notion Page":  {
-                                                    "main":  [
-                                                                 [
-                                                                     {
-                                                                         "node":  "Archive Result",
-                                                                         "type":  "main",
-                                                                         "index":  0
-                                                                     }
-                                                                 ]
-                                                             ]
-                                                },
-                        "Create Result":  {
-                                              "main":  [
-                                                           [
-                                                               {
-                                                                   "node":  "Merge Action Results A",
-                                                                   "type":  "main",
-                                                                   "index":  0
-                                                               }
-                                                           ]
-                                                       ]
-                                          },
-                        "Update Result":  {
-                                              "main":  [
-                                                           [
-                                                               {
-                                                                   "node":  "Merge Action Results A",
-                                                                   "type":  "main",
-                                                                   "index":  1
-                                                               }
-                                                           ]
-                                                       ]
-                                          },
-                        "Archive Result":  {
-                                               "main":  [
-                                                            [
-                                                                {
-                                                                    "node":  "Merge Action Results B",
-                                                                    "type":  "main",
-                                                                    "index":  0
-                                                                }
-                                                            ]
-                                                        ]
-                                           },
-                        "Noop Result":  {
-                                            "main":  [
-                                                         [
-                                                             {
-                                                                 "node":  "Merge Action Results B",
-                                                                 "type":  "main",
-                                                                 "index":  1
-                                                             }
-                                                         ]
-                                                     ]
-                                        },
-                        "Merge Action Results A":  {
-                                                       "main":  [
-                                                                    [
-                                                                        {
-                                                                            "node":  "Merge All Results",
-                                                                            "type":  "main",
-                                                                            "index":  0
-                                                                        }
-                                                                    ]
-                                                                ]
-                                                   },
-                        "Merge Action Results B":  {
-                                                       "main":  [
-                                                                    [
-                                                                        {
-                                                                            "node":  "Merge All Results",
-                                                                            "type":  "main",
-                                                                            "index":  1
-                                                                        }
-                                                                    ]
-                                                                ]
-                                                   },
-                        "Merge All Results":  {
-                                                  "main":  [
-                                                               [
-                                                                   {
-                                                                       "node":  "Build Monitor Payload",
-                                                                       "type":  "main",
-                                                                       "index":  0
-                                                                   }
-                                                               ]
-                                                           ]
-                                              },
-                        "Build Monitor Payload":  {
-                                                      "main":  [
-                                                                   [
-                                                                       {
-                                                                           "node":  "Monitor Teams Webhook",
-                                                                           "type":  "main",
-                                                                           "index":  0
-                                                                       }
-                                                                   ]
-                                                               ]
-                                                  }
-                    },
-    "settings":  {
-                     "executionOrder":  "v1",
-                     "timezone":  "Asia/Seoul",
-                     "callerPolicy":  "workflowsFromSameOwner",
-                     "availableInMCP":  false
-                 }
+  "name": "Synchronize-Vacation",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1180,
+        -80
+      ],
+      "id": "5e5c98ce-5e5c-5e5c-5e5c-5e5c98ca5e5c98c9",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 6 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1180,
+        96
+      ],
+      "id": "55956efd-5595-5595-5595-55956ef955956ef8",
+      "name": "Sync Schedule",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "command": "SYNC_VACATION_EMIT_ERROR_JSON=1 node - <<'EOF'\nglobalThis.__SYNC_VACATION_INLINE_CONFIG__ = {\"baseUrl\":\"https://vms-works.com/\",\"username\":\"jwkim\",\"password\":\"Wlsdnr@123\",\"targets\":[{\"resourceId\":84,\"resourceName\":\"김진욱\"},{\"resourceId\":80,\"resourceName\":\"김민영\"},{\"resourceId\":108,\"resourceName\":\"조현재\"},{\"resourceId\":111,\"resourceName\":\"강군석\"}]};\nconst fs = require('fs');\nconst path = require('path');\n\nconst injectedConfig = globalThis.__SYNC_VACATION_INLINE_CONFIG__ || null;\nconst workflowDir = typeof __dirname === 'string' ? __dirname : process.cwd();\nconst root = path.resolve(workflowDir, '..', '..');\n\nfunction loadEnvFile(envPath) {\n  const env = {};\n  if (!fs.existsSync(envPath)) return env;\n  const text = fs.readFileSync(envPath, 'utf8');\n  for (const line of text.split(/\\r?\\n/)) {\n    if (!line || /^\\s*#/.test(line)) continue;\n    const match = line.match(/^(.*?)=(.*)$/);\n    if (match) env[match[1]] = match[2];\n  }\n  return env;\n}\n\nfunction mergeEnv(...items) {\n  return Object.assign({}, ...items);\n}\n\nfunction getSetCookies(headers) {\n  if (typeof headers.getSetCookie === 'function') {\n    return headers.getSetCookie();\n  }\n  const single = headers.get('set-cookie');\n  return single ? [single] : [];\n}\n\nclass CookieJar {\n  constructor() {\n    this.cookies = new Map();\n  }\n\n  setFromResponse(headers) {\n    for (const entry of getSetCookies(headers)) {\n      const first = String(entry || '').split(';')[0];\n      const idx = first.indexOf('=');\n      if (idx <= 0) continue;\n      const name = first.slice(0, idx).trim();\n      const value = first.slice(idx + 1).trim();\n      if (!name) continue;\n      this.cookies.set(name, value);\n    }\n  }\n\n  header() {\n    return [...this.cookies.entries()].map(([name, value]) => `${name}=${value}`).join('; ');\n  }\n}\n\nfunction parseCsrfToken(html) {\n  const inputMatch = String(html || '').match(/name=\"csrf_token\"\\s+type=\"hidden\"\\s+value=\"([^\"]+)\"/i);\n  if (inputMatch) return inputMatch[1];\n  const metaMatch = String(html || '').match(/<meta\\s+name=\"csrf-token\"\\s+content=\"([^\"]+)\"/i);\n  return metaMatch ? metaMatch[1] : '';\n}\n\nfunction toKstDateParts(date = new Date()) {\n  const parts = new Intl.DateTimeFormat('en-CA', {\n    timeZone: 'Asia/Seoul',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit',\n  }).formatToParts(date);\n  const pick = (type) => parts.find((part) => part.type === type)?.value || '';\n  return {\n    year: Number(pick('year')),\n    month: Number(pick('month')),\n    day: Number(pick('day')),\n  };\n}\n\nfunction toKstTimestamp(date = new Date()) {\n  const parts = new Intl.DateTimeFormat('en-CA', {\n    timeZone: 'Asia/Seoul',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit',\n    hour: '2-digit',\n    minute: '2-digit',\n    second: '2-digit',\n    hour12: false,\n  }).formatToParts(date);\n  const pick = (type) => parts.find((part) => part.type === type)?.value || '';\n  return `${pick('year')}-${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}:${pick('second')} KST`;\n}\n\nfunction toKstDate(date = new Date()) {\n  const parts = toKstDateParts(date);\n  return `${String(parts.year).padStart(4, '0')}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;\n}\n\nconst SYNC_LOOKBACK_DAYS = 7;\n\nfunction addDays(date, days) {\n  const next = new Date(date.getTime());\n  next.setUTCDate(next.getUTCDate() + days);\n  return next;\n}\n\nfunction addMonthsKeepingDay(date, months) {\n  const next = new Date(date.getTime());\n  next.setUTCMonth(next.getUTCMonth() + months);\n  return next;\n}\n\nfunction buildMonthPairs(startDate, endDate) {\n  const startParts = toKstDateParts(startDate);\n  const endParts = toKstDateParts(endDate);\n  const pairs = [];\n\n  let year = startParts.year;\n  let month = startParts.month;\n  while (year < endParts.year || (year === endParts.year && month <= endParts.month)) {\n    pairs.push({ year, month });\n    month += 1;\n    if (month > 12) {\n      month = 1;\n      year += 1;\n    }\n  }\n\n  return pairs;\n}\n\nfunction buildSyncWindow() {\n  const today = new Date();\n  const startRef = addDays(today, -SYNC_LOOKBACK_DAYS);\n  const endRef = addMonthsKeepingDay(today, 1);\n  const startDate = toKstDate(startRef);\n  const endDate = toKstDate(endRef);\n\n  return {\n    startDate,\n    endDate,\n    lookbackDays: SYNC_LOOKBACK_DAYS,\n    monthPairs: buildMonthPairs(startRef, endRef),\n  };\n}\n\nfunction mapTimeSlot(leaveForm) {\n  const text = String(leaveForm || '');\n  if (text.includes('\\uC624\\uC804')) return '\\uC624\\uC804\\uB9CC';\n  if (text.includes('\\uC624\\uD6C4')) return '\\uC624\\uD6C4\\uB9CC';\n  if (text.includes('\\uC804\\uC77C') || text.includes('\\uD558\\uB8E8')) return '\\uD558\\uB8E8 \\uC885\\uC77C';\n  return '\\uD2B9\\uC815 \\uC2DC\\uAC04\\uC5D0\\uB9CC';\n}\n\nfunction mapTitle(leaveType, resourceName, leaveForm) {\n  if (!leaveForm || leaveForm.includes('\\uC804\\uC77C') || leaveForm.includes('\\uD558\\uB8E8')) {\n    return `(${leaveType}) ${resourceName}`;\n  }\n  return `(${leaveType}) ${resourceName} - ${leaveForm}`;\n}\n\nasync function fetchText(url, options = {}) {\n  const response = await fetch(url, options);\n  const text = await response.text();\n  return { response, text };\n}\n\nasync function loginAndFetchLeaves(config) {\n  const baseUrl = config.baseUrl.replace(/\\/$/, '');\n  const loginUrl = `${baseUrl}/auth/login?next=${encodeURIComponent(baseUrl + '/')}`;\n  const jar = new CookieJar();\n  const syncWindow = buildSyncWindow();\n\n  const loginPage = await fetchText(loginUrl, {\n    method: 'GET',\n    redirect: 'manual',\n    headers: {\n      accept: 'text/html,application/xhtml+xml',\n      'user-agent': 'Synchronize-Vacation/1.0',\n    },\n  });\n  jar.setFromResponse(loginPage.response.headers);\n\n  if (!loginPage.response.ok) {\n    throw new Error(`Failed to load VMS Works login page: ${loginPage.response.status}`);\n  }\n\n  const loginCsrf = parseCsrfToken(loginPage.text);\n  if (!loginCsrf) {\n    throw new Error('Failed to read login csrf token from VMS Works.');\n  }\n\n  const form = new URLSearchParams();\n  form.set('csrf_token', loginCsrf);\n  form.set('username', config.username);\n  form.set('password', config.password);\n  form.set('remember_me', 'y');\n\n  const loginResponse = await fetch(loginUrl, {\n    method: 'POST',\n    redirect: 'manual',\n    headers: {\n      accept: 'text/html,application/xhtml+xml',\n      'content-type': 'application/x-www-form-urlencoded',\n      origin: baseUrl,\n      referer: loginUrl,\n      cookie: jar.header(),\n      'user-agent': 'Synchronize-Vacation/1.0',\n    },\n    body: form.toString(),\n  });\n  jar.setFromResponse(loginResponse.headers);\n\n  if (loginResponse.status !== 302) {\n    const body = await loginResponse.text();\n    throw new Error(`VMS Works login failed: ${loginResponse.status} ${body.slice(0, 240)}`);\n  }\n\n  const home = await fetchText(`${baseUrl}/`, {\n    method: 'GET',\n    headers: {\n      accept: 'text/html,application/xhtml+xml',\n      cookie: jar.header(),\n      referer: loginUrl,\n      'user-agent': 'Synchronize-Vacation/1.0',\n    },\n  });\n  jar.setFromResponse(home.response.headers);\n\n  if (!home.response.ok) {\n    throw new Error(`Failed to open VMS Works home after login: ${home.response.status}`);\n  }\n\n  const apiCsrf = parseCsrfToken(home.text);\n  if (!apiCsrf) {\n    throw new Error('Failed to read API csrf token from VMS Works home page.');\n  }\n\n  const targetById = new Map(config.targets.map((target) => [target.resourceId, target]));\n  const dedup = new Map();\n\n  for (const pair of syncWindow.monthPairs) {\n    const url = `${baseUrl}/reports/resource/leave-calendar/data?year=${pair.year}&month=${pair.month}&org_id=25`;\n    const response = await fetch(url, {\n      method: 'GET',\n      headers: {\n        accept: 'application/json, text/plain, */*',\n        cookie: jar.header(),\n        referer: `${baseUrl}/`,\n        origin: baseUrl,\n        'x-csrftoken': apiCsrf,\n        'x-requested-with': 'XMLHttpRequest',\n        'user-agent': 'Synchronize-Vacation/1.0',\n      },\n    });\n\n    const text = await response.text();\n    if (!response.ok) {\n      throw new Error(`Leave calendar fetch failed for ${pair.year}-${String(pair.month).padStart(2, '0')}: ${response.status} ${text.slice(0, 240)}`);\n    }\n\n    let payload;\n    try {\n      payload = JSON.parse(text);\n    } catch (error) {\n      throw new Error(`Failed to parse leave calendar payload for ${pair.year}-${pair.month}: ${error.message}`);\n    }\n\n    const leavesByDate = payload?.leaves_by_date && typeof payload.leaves_by_date === 'object'\n      ? payload.leaves_by_date\n      : {};\n\n    for (const leaves of Object.values(leavesByDate)) {\n      if (!Array.isArray(leaves)) continue;\n      for (const leave of leaves) {\n        const resourceId = Number(leave?.resource_id);\n        if (!targetById.has(resourceId)) continue;\n\n        const resourceName = String(leave?.resource_name || targetById.get(resourceId)?.resourceName || '').trim();\n        const startDate = String(leave?.start_date || '').trim();\n        const endDate = String(leave?.end_date || leave?.start_date || '').trim();\n        const leaveType = String(leave?.leave_type || '').trim();\n        const leaveForm = String(leave?.leave_form || '').trim();\n        const period = String(leave?.period || '').trim();\n\n        if (!resourceName || !startDate || !leaveType || !leaveForm) continue;\n        if (endDate < syncWindow.startDate) continue;\n        if (startDate > syncWindow.endDate) continue;\n\n        const syncKey = [resourceId, startDate, endDate, leaveType, leaveForm].join(':');\n        if (dedup.has(syncKey)) continue;\n\n        dedup.set(syncKey, {\n          syncKey,\n          resourceId,\n          resourceName,\n          startDate,\n          endDate,\n          leaveType,\n          leaveForm,\n          period,\n          timeSlot: mapTimeSlot(leaveForm),\n          title: mapTitle(leaveType, resourceName, leaveForm),\n        });\n      }\n    }\n  }\n\n  return {\n    items: [...dedup.values()].sort((a, b) => {\n      const byStart = a.startDate.localeCompare(b.startDate);\n      if (byStart !== 0) return byStart;\n      const byName = a.resourceName.localeCompare(b.resourceName);\n      if (byName !== 0) return byName;\n      return a.syncKey.localeCompare(b.syncKey);\n    }),\n    syncWindow,\n  };\n}\n\nasync function main() {\n  const localEnv = injectedConfig ? {} : loadEnvFile(path.join(workflowDir, '.env'));\n  const sharedEnv = injectedConfig ? {} : loadEnvFile(path.join(root, 'credentials', 'vmsworks', 'vmsworks.env'));\n  const env = mergeEnv(sharedEnv, localEnv, process.env);\n\n  const config = injectedConfig || {\n    baseUrl: env.VMS_WORKS_ADDRESS || 'https://vms-works.com/',\n    username: env.VMS_WORKS_ID || '',\n    password: env.VMS_WORKS_PW || '',\n    targets: [\n      { resourceId: 84, resourceName: '\\uAE40\\uC9C4\\uC6B1' },\n      { resourceId: 80, resourceName: '\\uAE40\\uBBFC\\uC601' },\n      { resourceId: 108, resourceName: '\\uC870\\uD604\\uC7AC' },\n      { resourceId: 111, resourceName: '\\uAC15\\uAD70\\uC11D' },\n    ],\n  };\n\n  if (!config.username || !config.password) {\n    throw new Error('VMS Works login credentials are missing.');\n  }\n\n  const result = await loginAndFetchLeaves(config);\n  const output = {\n    managedBy: 'Synchronize-Vacation',\n    generatedAtKst: toKstTimestamp(),\n    syncWindow: result.syncWindow,\n    targetUsers: config.targets,\n    items: result.items,\n  };\n\n  process.stdout.write(`${JSON.stringify(output)}\\n`);\n}\n\nmain().catch((error) => {\n  if (process.env.SYNC_VACATION_EMIT_ERROR_JSON === '1') {\n    process.stdout.write(`${JSON.stringify({\n      managedBy: 'Synchronize-Vacation',\n      generatedAtKst: toKstTimestamp(),\n      syncWindow: {},\n      targetUsers: [\n        { resourceId: 84, resourceName: '\\uAE40\\uC9C4\\uC6B1' },\n        { resourceId: 80, resourceName: '\\uAE40\\uBBFC\\uC601' },\n        { resourceId: 108, resourceName: '\\uC870\\uD604\\uC7AC' },\n        { resourceId: 111, resourceName: '\\uAC15\\uAD70\\uC11D' },\n      ],\n      items: [],\n      ok: false,\n      errorMessage: String(error.message || error),\n    })}\\n`);\n    process.exit(0);\n  }\n  process.stderr.write(`${error.stack || error.message}\\n`);\n  process.exit(1);\n});\n\nEOF"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -920,
+        16
+      ],
+      "id": "0978678c-0978-0978-0978-0978678809786787",
+      "name": "Fetch Vacation Source",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawStdout = $json.stdout ?? '';\nconst rawStderr = $json.stderr ?? '';\nconst exitCode = Number($json.exitCode ?? 0);\nif (exitCode !== 0) {\n  throw new Error('Vacation source script failed with exit code ' + exitCode + '. ' + rawStderr);\n}\nif (!String(rawStdout).trim()) {\n  throw new Error('Vacation source script returned empty stdout.');\n}\nlet payload;\ntry {\n  payload = JSON.parse(rawStdout);\n} catch (error) {\n  throw new Error('Failed to parse vacation source JSON: ' + error.message);\n}\nconst items = Array.isArray(payload.items) ? payload.items : [];\nreturn [{\n  json: {\n    managedBy: String(payload.managedBy || 'Synchronize-Vacation'),\n    generatedAtKst: String(payload.generatedAtKst || ''),\n    syncWindow: payload.syncWindow && typeof payload.syncWindow === 'object' ? payload.syncWindow : {},\n    sourceOk: payload.ok === false ? false : true,\n    errorMessage: String(payload.errorMessage || ''),\n    totalItems: items.length,\n    targetUsers: Array.isArray(payload.targetUsers) ? payload.targetUsers : [],\n    items,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        16
+      ],
+      "id": "4d439b0a-4d43-4d43-4d43-4d439b064d439b05",
+      "name": "Parse Vacation Source",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/205cb995-8309-80e4-ac2a-c8589a1783eb/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({ page_size: 100, sorts: [{ property: 'Date', direction: 'descending' }] }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -392,
+        16
+      ],
+      "id": "3ba66eac-3ba6-3ba6-3ba6-3ba66ea83ba66ea7",
+      "name": "Load Notion Calendar",
+      "alwaysOutputData": true,
+      "credentials": {
+        "notionApi": {
+          "id": "LrLyYGhPvHMbPfZm",
+          "name": "tsupport API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('Parse Vacation Source').first()?.json ?? {};\nconst notionPayload = $('Load Notion Calendar').first()?.json ?? {};\nconst notionPages = Array.isArray(notionPayload.results) ? notionPayload.results : [];\nconst payloadItems = Array.isArray(source.items) ? source.items : [];\nconst syncWindow = source.syncWindow && typeof source.syncWindow === 'object' ? source.syncWindow : {};\nconst windowStart = String(syncWindow.startDate || '');\nconst windowEnd = String(syncWindow.endDate || '');\nconst managedBy = String(source.managedBy || 'Synchronize-Vacation');\nconst managedMarker = 'managed_by=' + managedBy;\nconst legacyManagedMarker = 'managed_by=Synchorize-Vacation';\nconst legacyUpdatedByMarker = 'Updated_by=Synchroniz-Vacation';\nconst updatedByMarker = 'Updated_by=Synchronize-Vacation';\nif (source.sourceOk === false) {\n  return [{ json: { action: 'source_error', ok: false, title: 'Source Error', errorMessage: String(source.errorMessage || 'Vacation source fetch failed.') } }];\n}\nconst K = {\n  title: 'Title',\n  date: 'Date',\n  description: 'Description',\n  tag: '\\uD0DC\\uADF8',\n  person: '\\uC0AC\\uB78C',\n  timeSlot: '\\uC2DC\\uAC04\\uB300',\n  vacationTag: '\\uD734\\uAC00',\n  allDay: '\\uD558\\uB8E8 \\uC885\\uC77C',\n  morning: '\\uC624\\uC804\\uB9CC',\n  afternoon: '\\uC624\\uD6C4\\uB9CC',\n  partial: '\\uD2B9\\uC815 \\uC2DC\\uAC04\\uC5D0\\uB9CC',\n};\nfunction normalize(value) { return String(value ?? '').normalize('NFC').trim(); }\nfunction pickPlainText(richText) { return Array.isArray(richText) ? richText.map((entry) => entry?.plain_text || entry?.text?.content || '').join('') : ''; }\nfunction propText(page, name) {\n  const prop = page?.properties?.[name];\n  if (!prop) return '';\n  if (prop.type === 'rich_text') return pickPlainText(prop.rich_text);\n  if (prop.type === 'title') return pickPlainText(prop.title);\n  if (prop.type === 'select') return normalize(prop.select?.name);\n  if (prop.type === 'multi_select') return (prop.multi_select || []).map((entry) => normalize(entry?.name)).join(',');\n  if (prop.type === 'date') return normalize(prop.date?.start);\n  return '';\n}\nfunction propDate(page) {\n  const prop = page?.properties?.[K.date];\n  return prop?.date ? { start: String(prop.date.start || ''), end: String(prop.date.end || prop.date.start || '') } : { start: '', end: '' };\n}\nfunction buildMatchKeyFromSource(item) {\n  return [String(item.title || ''), String(item.startDate || ''), String(item.endDate || item.startDate || ''), String(item.resourceName || '')].join('|');\n}\nfunction buildMatchKeyFromPage(page) {\n  const currentDate = propDate(page);\n  return [propText(page, K.title), currentDate.start, currentDate.end || currentDate.start, propText(page, K.person)].join('|');\n}\nfunction overlapsWindow(start, end) {\n  if (!windowStart || !windowEnd || !start) return false;\n  const realEnd = end || start;\n  return !(realEnd < windowStart || start > windowEnd);\n}\nfunction buildDescription(item) {\n  return updatedByMarker;\n}\nfunction buildProperties(item) {\n  const description = buildDescription(item);\n  return {\n    [K.title]: { title: [{ text: { content: item.title } }] },\n    [K.date]: { date: { start: item.startDate, end: item.endDate || item.startDate } },\n    [K.description]: { rich_text: [{ text: { content: description } }] },\n    [K.tag]: { select: { name: K.vacationTag } },\n    [K.timeSlot]: { select: { name: item.timeSlot || K.allDay } },\n    [K.person]: { multi_select: [{ name: item.resourceName }] },\n  };\n}\nconst expectedMap = new Map();\nfor (const item of payloadItems) {\n  const matchKey = buildMatchKeyFromSource(item);\n  expectedMap.set(matchKey, { ...item, matchKey, properties: buildProperties(item), description: buildDescription(item) });\n}\nconst existingManaged = notionPages.filter((page) => {\n  const description = propText(page, K.description);\n  if (!(description.includes(managedMarker) || description.includes(legacyManagedMarker) || description.includes(updatedByMarker) || description.includes(legacyUpdatedByMarker))) return false;\n  const currentDate = propDate(page);\n  return overlapsWindow(currentDate.start, currentDate.end);\n});\nconst existingMap = new Map();\nfor (const page of existingManaged) {\n  const matchKey = buildMatchKeyFromPage(page);\n  if (!matchKey) continue;\n  existingMap.set(matchKey, page);\n}\nconst actions = [];\nfor (const [matchKey, item] of expectedMap.entries()) {\n  const existing = existingMap.get(matchKey);\n  if (!existing) {\n    actions.push({ json: { action: 'create', matchKey, syncKey: item.syncKey, title: item.title, properties: item.properties } });\n    continue;\n  }\n  const currentDate = propDate(existing);\n  const currentTitle = propText(existing, K.title);\n  const currentDescription = propText(existing, K.description);\n  const currentTimeSlot = propText(existing, K.timeSlot);\n  const currentTag = propText(existing, K.tag);\n  const currentPerson = propText(existing, K.person);\n  const needsUpdate = [\n    currentTitle !== item.title,\n    currentDate.start !== item.startDate,\n    (currentDate.end || currentDate.start) !== (item.endDate || item.startDate),\n    currentDescription !== item.description,\n    currentTimeSlot !== item.timeSlot,\n    currentTag !== K.vacationTag,\n    currentPerson !== item.resourceName,\n  ].some(Boolean);\n  if (needsUpdate) {\n    actions.push({ json: { action: 'update', matchKey, syncKey: item.syncKey, pageId: existing.id, title: item.title, properties: item.properties } });\n  }\n}\nfor (const [matchKey, page] of existingMap.entries()) {\n  if (expectedMap.has(matchKey)) continue;\n  if (page.archived) continue;\n  actions.push({ json: { action: 'archive', matchKey, pageId: page.id, title: propText(page, K.title) || matchKey } });\n};\nif (actions.length === 0) {\n  return [{ json: { action: 'noop', ok: true, syncKey: 'none', title: 'No changes', summary: { expectedCount: expectedMap.size, existingManagedCount: existingMap.size } } }];\n}\nreturn actions;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        16
+      ],
+      "id": "4069ea03-4069-4069-4069-4069e9ff4069e9fe",
+      "name": "Build Notion Sync Plan",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "60198885-6019-6019-6019-6019888160198880",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "create",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        128,
+        -176
+      ],
+      "id": "3c03c8d3-3c03-3c03-3c03-3c03c8cf3c03c8ce",
+      "name": "If Create",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({ parent: { database_id: '205cb995-8309-80e4-ac2a-c8589a1783eb' }, properties: $json.properties }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        384,
+        -176
+      ],
+      "id": "4dfbfbbf-4dfb-4dfb-4dfb-4dfbfbbb4dfbfbba",
+      "name": "Create Notion Page",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "notionApi": {
+          "id": "LrLyYGhPvHMbPfZm",
+          "name": "tsupport API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const planned = $('If Create').item.json ?? {};\nconst response = $json ?? {};\nconst hasId = Boolean(response.id);\nconst message = response.error?.message || response.message || response.error || '';\nreturn [{ json: {\n  action: String(planned.action || ''),\n  ok: hasId,\n  title: String(planned.title || planned.syncKey || ''),\n  errorMessage: hasId ? '' : String(message || 'Notion request failed.'),\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        -176
+      ],
+      "id": "44bbc18f-44bb-44bb-44bb-44bbc19344bbc194",
+      "name": "Create Result",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "53149f0f-5314-5314-5314-53149f0b53149f0a",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "update",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        128,
+        16
+      ],
+      "id": "1d693106-1d69-1d69-1d69-1d6931021d693101",
+      "name": "If Update",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({ properties: $json.properties }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        384,
+        16
+      ],
+      "id": "52bebb6c-52be-52be-52be-52bebb6852bebb67",
+      "name": "Update Notion Page",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "notionApi": {
+          "id": "LrLyYGhPvHMbPfZm",
+          "name": "tsupport API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const planned = $('If Update').item.json ?? {};\nconst response = $json ?? {};\nconst hasId = Boolean(response.id);\nconst message = response.error?.message || response.message || response.error || '';\nreturn [{ json: {\n  action: String(planned.action || ''),\n  ok: hasId,\n  title: String(planned.title || planned.syncKey || ''),\n  errorMessage: hasId ? '' : String(message || 'Notion request failed.'),\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        16
+      ],
+      "id": "65aa3922-65aa-65aa-65aa-65aa392665aa3927",
+      "name": "Update Result",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "55c24f8a-55c2-55c2-55c2-55c24f8655c24f85",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "archive",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        128,
+        208
+      ],
+      "id": "51a51093-51a5-51a5-51a5-51a5109751a51098",
+      "name": "If Archive",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({ archived: true }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        384,
+        208
+      ],
+      "id": "0ce8593b-0ce8-0ce8-0ce8-0ce8593f0ce85940",
+      "name": "Archive Notion Page",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "notionApi": {
+          "id": "LrLyYGhPvHMbPfZm",
+          "name": "tsupport API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const planned = $('If Archive').item.json ?? {};\nconst response = $json ?? {};\nconst hasId = Boolean(response.id);\nconst message = response.error?.message || response.message || response.error || '';\nreturn [{ json: {\n  action: String(planned.action || ''),\n  ok: hasId,\n  title: String(planned.title || planned.syncKey || ''),\n  errorMessage: hasId ? '' : String(message || 'Notion request failed.'),\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        208
+      ],
+      "id": "77dec009-77de-77de-77de-77dec00d77dec00e",
+      "name": "Archive Result",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first()?.json ?? {};\nconst action = String(item.action || 'noop');\nreturn [{ json: {\n  action,\n  ok: action !== 'source_error',\n  title: String(item.title || action),\n  errorMessage: String(item.errorMessage || ''),\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        400
+      ],
+      "id": "76bb4b97-76bb-76bb-76bb-76bb4b9376bb4b92",
+      "name": "Noop Result",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        896,
+        -80
+      ],
+      "id": "7a871f8d-7a87-7a87-7a87-7a871f917a871f92",
+      "name": "Merge Action Results A",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        896,
+        240
+      ],
+      "id": "7a871f8e-7a87-7a87-7a87-7a871f927a871f93",
+      "name": "Merge Action Results B",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1160,
+        80
+      ],
+      "id": "7a871f8f-7a87-7a87-7a87-7a871f937a871f94",
+      "name": "Merge All Results",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.all().map((item) => item.json ?? {});\nconst now = new Date();\nconst parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(now);\nconst pick = (type) => parts.find((part) => part.type === type)?.value || '';\nconst executedAt = pick('year') + '-' + pick('month') + '-' + pick('day') + ' ' + pick('hour') + ':' + pick('minute') + ':' + pick('second') + ' KST';\nconst errorItem = results.find((item) => item.ok === false);\nconst isError = Boolean(errorItem);\nconst workflowLink = \"https://n8n.vmsmozart-test.com:8443/workflow/17Zl9pkIzYbHX315\";\nconst titleText = `[Synchronize-Vacation](${workflowLink}) 실행 결과 - ${isError ? '오류' : '정상'}`;\nconst bodyText = `실행일: ${executedAt}${isError && errorItem?.errorMessage ? '\\n오류: ' + String(errorItem.errorMessage) : ''}`;\nconst entities = isError ? [{ type: 'mention', text: '<at>김진욱</at>', mentioned: { id: 'jwkim@vms-solutions.com', name: '김진욱' } }] : [];\nconst heading = isError ? '<at>김진욱</at> 님, ' + titleText : titleText;\nreturn [{ json: {\n  isError,\n  entities,\n  heading,\n  bodyText,\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1416,
+        80
+      ],
+      "id": "3a20363d-3a20-3a20-3a20-3a2036413a203642",
+      "name": "Build Monitor Payload",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://redacted.invalid/powerautomate/synchronize-vacation-webhook",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={{ ({ type: 'message', attachments: [{ contentType: 'application/vnd.microsoft.card.adaptive', content: { type: 'AdaptiveCard', body: [{ type: 'TextBlock', text: $json.heading, wrap: true, weight: 'Bolder' }, { type: 'TextBlock', text: $json.bodyText, wrap: true, spacing: 'Small' }], msteams: { entities: Array.isArray($json.entities) ? $json.entities : [] }, '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json', version: '1.4' } }] }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1672,
+        80
+      ],
+      "id": "5d2f3f7b-5d2f-5d2f-5d2f-5d2f3f775d2f3f76",
+      "name": "Monitor Teams Webhook",
+      "alwaysOutputData": true
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Vacation Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync Schedule": {
+      "main": [
+        [
+          {
+            "node": "Fetch Vacation Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Vacation Source": {
+      "main": [
+        [
+          {
+            "node": "Parse Vacation Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Vacation Source": {
+      "main": [
+        [
+          {
+            "node": "Load Notion Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Notion Calendar": {
+      "main": [
+        [
+          {
+            "node": "Build Notion Sync Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Notion Sync Plan": {
+      "main": [
+        [
+          {
+            "node": "If Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Create": {
+      "main": [
+        [
+          {
+            "node": "Create Notion Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Notion Page": {
+      "main": [
+        [
+          {
+            "node": "Create Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Update": {
+      "main": [
+        [
+          {
+            "node": "Update Notion Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Notion Page": {
+      "main": [
+        [
+          {
+            "node": "Update Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Archive": {
+      "main": [
+        [
+          {
+            "node": "Archive Notion Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Noop Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archive Notion Page": {
+      "main": [
+        [
+          {
+            "node": "Archive Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Result": {
+      "main": [
+        [
+          {
+            "node": "Merge Action Results A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Result": {
+      "main": [
+        [
+          {
+            "node": "Merge Action Results A",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Archive Result": {
+      "main": [
+        [
+          {
+            "node": "Merge Action Results B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Noop Result": {
+      "main": [
+        [
+          {
+            "node": "Merge Action Results B",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Action Results A": {
+      "main": [
+        [
+          {
+            "node": "Merge All Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Action Results B": {
+      "main": [
+        [
+          {
+            "node": "Merge All Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge All Results": {
+      "main": [
+        [
+          {
+            "node": "Build Monitor Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Monitor Payload": {
+      "main": [
+        [
+          {
+            "node": "Monitor Teams Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul"
+  }
 }

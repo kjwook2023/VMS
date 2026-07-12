@@ -1,4 +1,4 @@
-# TS-n8n Session Handoff
+﻿# TS-n8n Session Handoff
 
 ## Purpose
 
@@ -17,9 +17,9 @@ Confirmed baseline for retiring and deleting the weekly-meeting Teams alert work
 - Workflow name: `Check-Weekly-Meeting`
 - Previous purpose: detect the configured weekly-meeting Outlook event and send a Teams reminder
 - Previous local definition:
-  - [Check-Weekly-Meeting_api.json](D:/kjwook2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json)
-  - [Check-Weekly-Meeting_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
-  - [Check-Weekly-Meeting_api.ps1](D:/kjwook2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.ps1)
+  - [Check-Weekly-Meeting_api.json](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json)
+  - [Check-Weekly-Meeting_design.md](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
+  - [Check-Weekly-Meeting_api.ps1](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.ps1)
 
 Retirement handling:
 
@@ -30,10 +30,10 @@ Retirement handling:
 
 ## Related Docs Updated
 
-- [Workflow-Notion-Teams-Interface.md](D:/kjwook2023/vms/ts-n8n/docs/Workflow-Notion-Teams-Interface.md)
-- [Check-Weekly-Meeting_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
-- [Check-Weekly-Meeting_api.ps1](D:/kjwook2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.ps1)
-- [apply_holiday_fallback.ps1](D:/kjwook2023/vms/ts-n8n/scripts/apply_holiday_fallback.ps1)
+- [Workflow-Notion-Teams-Interface.md](Workflow-Notion-Teams-Interface.md)
+- [Check-Weekly-Meeting_design.md](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
+- [Check-Weekly-Meeting_api.ps1](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.ps1)
+- [apply_holiday_fallback.ps1](../scripts/apply_holiday_fallback.ps1)
 
 ## Verification
 

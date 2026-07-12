@@ -30,21 +30,24 @@ Active workflows confirmed during this sync:
 
 ## Sync Actions
 
-- Ran [workflows/_generate_active_workflow_docs.ps1](D:/kjwook2023/vms/ts-n8n/workflows/_generate_active_workflow_docs.ps1) against the live server to refresh active workflow exports.
+- Ran [workflows/_generate_active_workflow_docs.ps1](../workflows/_generate_active_workflow_docs.ps1) against the live server to refresh active workflow exports.
 - Reapplied repository-safe redaction after generation:
   - Teams / Power Automate webhook URLs replaced with redacted placeholders in exported JSON and design docs
   - `Lunch-Recommendation-Alert` Gemini API key value replaced with `__REDACTED_GEMINI_API_KEY__`
 - Restored `Clean-Daily-Scrum` repository-specific handling:
-  - [Clean-Daily-Scrum_api.ps1](D:/kjwook2023/vms/ts-n8n/workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_api.ps1) again injects `TS_DAILY_SCRUM_TEAMS_WEBHOOK` when deploying from the redacted export
-  - [Clean-Daily-Scrum_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_design.md) again documents the `11:30` early-send rule and `16:30` default-send rule
+  - [Clean-Daily-Scrum_api.ps1](../workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_api.ps1) again injects `TS_DAILY_SCRUM_TEAMS_WEBHOOK` when deploying from the redacted export
+  - [Clean-Daily-Scrum_design.md](../workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_design.md) again documents the `11:30` early-send rule and `16:30` default-send rule
 
 ## Updated Docs
 
-- [Workflow-Notion-Teams-Interface.md](D:/kjwook2023/vms/ts-n8n/docs/Workflow-Notion-Teams-Interface.md)
-- Active workflow folders under [workflows](D:/kjwook2023/vms/ts-n8n/workflows)
-- Previous operational fix record kept in [session_handoff_2026-06-16.md](D:/kjwook2023/vms/ts-n8n/docs/session_handoff_2026-06-16.md)
+- [Workflow-Notion-Teams-Interface.md](Workflow-Notion-Teams-Interface.md)
+- Active workflow folders under [workflows](../workflows)
+- Previous operational fix record kept in [session_handoff_2026-06-16.md](session_handoff_2026-06-16.md)
+- Repository migration checklist: [Repository-Migration-Checklist.md](Repository-Migration-Checklist.md)
 
 ## Notes
 
 - This sync reflects the current active workflow snapshot from the server, but repository exports intentionally do not keep live webhook URLs or live Gemini key values.
 - `Check-Weekly-Meeting` remains retired and is not part of the active workflow set.
+- Handoff docs now use relative repository links instead of personal absolute Windows paths.
+- `github-pr-monitor` repo export no longer keeps the personal GitHub credential display name and now expects `N8N_GITHUB_CREDENTIAL_NAME` at deploy time.

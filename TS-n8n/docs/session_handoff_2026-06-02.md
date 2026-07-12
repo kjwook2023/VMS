@@ -1,4 +1,4 @@
-# TS-n8n Session Handoff
+﻿# TS-n8n Session Handoff
 
 ## Purpose
 
@@ -12,10 +12,10 @@ Primary focus in this update:
 
 ## Working Context
 
-- Workspace: `D:\kjwook2023\vms\ts-n8n`
-- Env file: [n8n.env](D:/kjwook2023/vms/ts-n8n/n8n.env)
-- Active workflow docs generator: [workflows/_generate_active_workflow_docs.ps1](D:/kjwook2023/vms/ts-n8n/workflows/_generate_active_workflow_docs.ps1)
-- Previous handoff: [docs/session_handoff_2026-06-01.md](D:/kjwook2023/vms/ts-n8n/docs/session_handoff_2026-06-01.md)
+- Workspace: `ts-n8n repository root`
+- Env file: [n8n.env](../n8n.env)
+- Active workflow docs generator: [workflows/_generate_active_workflow_docs.ps1](../workflows/_generate_active_workflow_docs.ps1)
+- Previous handoff: [docs/session_handoff_2026-06-01.md](session_handoff_2026-06-01.md)
 
 ## Current Baseline
 
@@ -31,8 +31,8 @@ The `2026-06-01` sync baseline still stands:
 
 Target workflow:
 
-- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json](D:/kjwook2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json)
-- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
+- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json)
+- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
 
 Intent:
 
@@ -69,7 +69,7 @@ Latest known server timestamp after the change:
 
 The regenerated design doc reflects that timestamp:
 
-- [Check-Weekly-Meeting_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
+- [Check-Weekly-Meeting_design.md](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
 
 ### 3. Why the link labels are currently English
 
@@ -113,8 +113,8 @@ Suggested checks:
 
 ## Files Most Relevant For Resume
 
-- [docs/session_handoff_2026-06-02.md](D:/kjwook2023/vms/ts-n8n/docs/session_handoff_2026-06-02.md)
-- [docs/session_handoff_2026-06-01.md](D:/kjwook2023/vms/ts-n8n/docs/session_handoff_2026-06-01.md)
-- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json](D:/kjwook2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json)
-- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
-- [docs/Workflow-Notion-Teams-Interface.md](D:/kjwook2023/vms/ts-n8n/docs/Workflow-Notion-Teams-Interface.md)
+- [docs/session_handoff_2026-06-02.md](session_handoff_2026-06-02.md)
+- [docs/session_handoff_2026-06-01.md](session_handoff_2026-06-01.md)
+- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json)
+- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
+- [docs/Workflow-Notion-Teams-Interface.md](Workflow-Notion-Teams-Interface.md)

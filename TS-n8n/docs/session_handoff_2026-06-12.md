@@ -1,4 +1,4 @@
-# TS-n8n Session Handoff
+﻿# TS-n8n Session Handoff
 
 ## Purpose
 
@@ -17,10 +17,10 @@ Confirmed baseline for the lunch workflow, `Clean-Daily-Scrum` half-day exceptio
 
 ## Lunch-Recommendation-Alert
 
-- Main design note: [Lunch-Recommendation-Alert.md](D:/kjwook2023/vms/ts-n8n/docs/Lunch-Recommendation-Alert.md)
-- Build script: [build_lunch_recommendation_alert.js](D:/kjwook2023/vms/ts-n8n/scripts/build_lunch_recommendation_alert.js)
-- Workflow JSON: [Lunch-Recommendation-Alert_api.json](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_api.json)
-- Upsert script: [Lunch-Recommendation-Alert_api.ps1](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_api.ps1)
+- Main design note: [Lunch-Recommendation-Alert.md](Lunch-Recommendation-Alert.md)
+- Build script: [build_lunch_recommendation_alert.js](../scripts/build_lunch_recommendation_alert.js)
+- Workflow JSON: [Lunch-Recommendation-Alert_api.json](../workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_api.json)
+- Upsert script: [Lunch-Recommendation-Alert_api.ps1](../workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_api.ps1)
 
 Confirmed implementation:
 
@@ -48,9 +48,9 @@ Residual risks:
 
 ## Lunch-Menu-Alert
 
-- Build script: [build_lunch_menu_alert.js](D:/kjwook2023/vms/ts-n8n/scripts/build_lunch_menu_alert.js)
-- Workflow JSON: [Lunch-Menu-Alert_api.json](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_api.json)
-- Design note: [Lunch-Menu-Alert_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_design.md)
+- Build script: [build_lunch_menu_alert.js](../scripts/build_lunch_menu_alert.js)
+- Workflow JSON: [Lunch-Menu-Alert_api.json](../workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_api.json)
+- Design note: [Lunch-Menu-Alert_design.md](../workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_design.md)
 
 Confirmed implementation:
 
@@ -60,9 +60,9 @@ Confirmed implementation:
 
 ## Clean-Daily-Scrum
 
-- Workflow JSON: [Clean-Daily-Scrum_api.json](D:/kjwook2023/vms/ts-n8n/workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_api.json)
-- Design note: [Clean-Daily-Scrum_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_design.md)
-- Patch helper: [update_clean_daily_scrum_halfday.js](D:/kjwook2023/vms/ts-n8n/scripts/update_clean_daily_scrum_halfday.js)
+- Workflow JSON: [Clean-Daily-Scrum_api.json](../workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_api.json)
+- Design note: [Clean-Daily-Scrum_design.md](../workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_design.md)
+- Patch helper: [update_clean_daily_scrum_halfday.js](../scripts/update_clean_daily_scrum_halfday.js)
 
 Confirmed implementation:
 
@@ -80,7 +80,7 @@ Confirmed intent:
 
 ## Documentation Generator
 
-- Generator script: [workflows/_generate_active_workflow_docs.ps1](D:/kjwook2023/vms/ts-n8n/workflows/_generate_active_workflow_docs.ps1)
+- Generator script: [workflows/_generate_active_workflow_docs.ps1](../workflows/_generate_active_workflow_docs.ps1)
 - Active workflow docs were regenerated after the lunch workflow updates
 - `*_design.md` files now write as `UTF-8 with BOM`
 - `*_api.json` and `*_api.ps1` remain `UTF-8 without BOM`
@@ -92,13 +92,13 @@ Reason for the change:
 
 ## Related Docs Updated
 
-- [Lunch-Recommendation-Alert.md](D:/kjwook2023/vms/ts-n8n/docs/Lunch-Recommendation-Alert.md)
-- [Workflow-Notion-Teams-Interface.md](D:/kjwook2023/vms/ts-n8n/docs/Workflow-Notion-Teams-Interface.md)
-- [session_handoff_2026-06-11.md](D:/kjwook2023/vms/ts-n8n/docs/session_handoff_2026-06-11.md)
-- [session_handoff_draft_2026-06-11_lunch-recommendation-alert.md](D:/kjwook2023/vms/ts-n8n/docs/handoff_drafts/session_handoff_draft_2026-06-11_lunch-recommendation-alert.md)
-- [Lunch-Menu-Alert_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_design.md)
-- [Lunch-Recommendation-Alert_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_design.md)
-- [Clean-Daily-Scrum_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_design.md)
+- [Lunch-Recommendation-Alert.md](Lunch-Recommendation-Alert.md)
+- [Workflow-Notion-Teams-Interface.md](Workflow-Notion-Teams-Interface.md)
+- [session_handoff_2026-06-11.md](session_handoff_2026-06-11.md)
+- [session_handoff_draft_2026-06-11_lunch-recommendation-alert.md](handoff_drafts/session_handoff_draft_2026-06-11_lunch-recommendation-alert.md)
+- [Lunch-Menu-Alert_design.md](../workflows/Lunch-Menu-Alert/Lunch-Menu-Alert_design.md)
+- [Lunch-Recommendation-Alert_design.md](../workflows/Lunch-Recommendation-Alert/Lunch-Recommendation-Alert_design.md)
+- [Clean-Daily-Scrum_design.md](../workflows/Clean-Daily-Scrum/Clean-Daily-Scrum_design.md)
 
 ## Next Resume Point
 

@@ -59,6 +59,33 @@ function Invoke-N8nApi {
     return $raw | ConvertFrom-Json
 }
 
+function New-PreparedWorkflowJson {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath
+    )
+
+    $raw = Get-Content -LiteralPath $SourcePath -Raw -Encoding UTF8
+    $redactedTeamsWebhook = "https://redacted.invalid/powerautomate/license-approval-webhook"
+
+    if ($raw.Contains($redactedTeamsWebhook)) {
+        if (-not $env:TS_LICENSE_ALERT_WEBHOOK) {
+            throw "TS_LICENSE_ALERT_WEBHOOK is required when License-Approval-Alert_api.json contains the redacted Teams webhook placeholder."
+        }
+
+        $raw = $raw.Replace($redactedTeamsWebhook, $env:TS_LICENSE_ALERT_WEBHOOK)
+    }
+
+    $tempFile = Join-Path ([System.IO.Path]::GetTempPath()) ("License-Approval-Alert_" + [guid]::NewGuid().ToString() + ".json")
+    [System.IO.File]::WriteAllText($tempFile, $raw, [System.Text.UTF8Encoding]::new($false))
+
+    return [PSCustomObject]@{
+        Workflow = ($raw | ConvertFrom-Json)
+        BodyFile = $tempFile
+        TempFile = $tempFile
+    }
+}
+
 Set-EnvFromFile -Path $EnvFile
 
 if (-not $env:N8N_BASE_URL) {
@@ -73,37 +100,46 @@ if (-not (Test-Path -LiteralPath $WorkflowJson)) {
     throw "Workflow JSON not found: $WorkflowJson"
 }
 
-$workflow = Get-Content -LiteralPath $WorkflowJson -Raw | ConvertFrom-Json
-$workflowName = $workflow.name
+$prepared = New-PreparedWorkflowJson -SourcePath $WorkflowJson
 
-if (-not $workflowName) {
-    throw "Workflow name is missing in JSON file."
-}
+try {
+    $workflow = $prepared.Workflow
+    $workflowName = $workflow.name
 
-$baseUrl = $env:N8N_BASE_URL.TrimEnd("/")
-$listUrl = "$baseUrl/api/v1/workflows?limit=250"
-$existing = Invoke-N8nApi -Method GET -Url $listUrl
-$target = $existing.data | Where-Object { $_.name -eq $workflowName } | Select-Object -First 1
+    if (-not $workflowName) {
+        throw "Workflow name is missing in JSON file."
+    }
 
-if ($target) {
-    $updateUrl = "$baseUrl/api/v1/workflows/$($target.id)"
-    $result = Invoke-N8nApi -Method PUT -Url $updateUrl -BodyFile $WorkflowJson
-    [PSCustomObject]@{
-        action = "updated"
-        id = $result.id
-        name = $result.name
-        active = $result.active
-        updatedAt = $result.updatedAt
+    $baseUrl = $env:N8N_BASE_URL.TrimEnd("/")
+    $listUrl = "$baseUrl/api/v1/workflows?limit=250"
+    $existing = Invoke-N8nApi -Method GET -Url $listUrl
+    $target = $existing.data | Where-Object { $_.name -eq $workflowName } | Select-Object -First 1
+
+    if ($target) {
+        $updateUrl = "$baseUrl/api/v1/workflows/$($target.id)"
+        $result = Invoke-N8nApi -Method PUT -Url $updateUrl -BodyFile $prepared.BodyFile
+        [PSCustomObject]@{
+            action = "updated"
+            id = $result.id
+            name = $result.name
+            active = $result.active
+            updatedAt = $result.updatedAt
+        }
+    }
+    else {
+        $createUrl = "$baseUrl/api/v1/workflows"
+        $result = Invoke-N8nApi -Method POST -Url $createUrl -BodyFile $prepared.BodyFile
+        [PSCustomObject]@{
+            action = "created"
+            id = $result.id
+            name = $result.name
+            active = $result.active
+            updatedAt = $result.updatedAt
+        }
     }
 }
-else {
-    $createUrl = "$baseUrl/api/v1/workflows"
-    $result = Invoke-N8nApi -Method POST -Url $createUrl -BodyFile $WorkflowJson
-    [PSCustomObject]@{
-        action = "created"
-        id = $result.id
-        name = $result.name
-        active = $result.active
-        updatedAt = $result.updatedAt
+finally {
+    if ($prepared.TempFile -and (Test-Path -LiteralPath $prepared.TempFile)) {
+        Remove-Item -LiteralPath $prepared.TempFile -Force
     }
 }

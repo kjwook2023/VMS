@@ -1,4 +1,4 @@
-# TS-n8n Session Handoff
+﻿# TS-n8n Session Handoff
 
 ## 문서 목적
 
@@ -20,16 +20,16 @@
 
 ## 이번 세션에서 참고한 문서
 
-- [docs/session_handoff_2026-05-06.md](D:/KJWOOK2023/vms/ts-n8n/docs/session_handoff_2026-05-06.md)
-- [docs/n8n_teams_control_design_2026-05-15.md](D:/KJWOOK2023/vms/ts-n8n/docs/n8n_teams_control_design_2026-05-15.md)
-- [docs/Workflow-Notion-Teams-Interface.md](D:/KJWOOK2023/vms/ts-n8n/docs/Workflow-Notion-Teams-Interface.md)
+- [docs/session_handoff_2026-05-06.md](session_handoff_2026-05-06.md)
+- [docs/n8n_teams_control_design_2026-05-15.md](n8n_teams_control_design_2026-05-15.md)
+- [docs/Workflow-Notion-Teams-Interface.md](Workflow-Notion-Teams-Interface.md)
 
 ## 작업 루트
 
-- 작업 루트: `D:\KJWOOK2023\vms\ts-n8n`
-- n8n 환경 파일: [n8n.env](D:/KJWOOK2023/vms/ts-n8n/n8n.env)
-- 워크플로우 폴더: [workflows](D:/KJWOOK2023/vms/ts-n8n/workflows)
-- VMS Works 관련 폴더: [credentials/vmsworks](D:/KJWOOK2023/vms/ts-n8n/credentials/vmsworks)
+- 작업 루트: `ts-n8n repository root`
+- n8n 환경 파일: [n8n.env](../n8n.env)
+- 워크플로우 폴더: [workflows](../workflows)
+- VMS Works 관련 폴더: [credentials/vmsworks](../credentials/vmsworks)
 
 주의:
 
@@ -63,9 +63,9 @@
 
 관련 파일:
 
-- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md](D:/KJWOOK2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
-- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json](D:/KJWOOK2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json)
-- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.ps1](D:/KJWOOK2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.ps1)
+- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
+- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json)
+- [workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.ps1](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.ps1)
 
 ### 2. TS-Inform_New_Issue
 
@@ -93,9 +93,9 @@
 
 관련 파일:
 
-- [workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_design.md](D:/KJWOOK2023/vms/ts-n8n/workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_design.md)
-- [workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.json](D:/KJWOOK2023/vms/ts-n8n/workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.json)
-- [workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.ps1](D:/KJWOOK2023/vms/ts-n8n/workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.ps1)
+- [workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_design.md](../workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_design.md)
+- [workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.json](../workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.json)
+- [workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.ps1](../workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.ps1)
 
 ### 3. Check_My_Schedule
 
@@ -128,9 +128,9 @@
 
 관련 파일:
 
-- [workflows/Check_My_Schedule/Check_My_Schedule_design.md](D:/KJWOOK2023/vms/ts-n8n/workflows/Check_My_Schedule/Check_My_Schedule_design.md)
-- [workflows/Check_My_Schedule/Check_My_Schedule_api.json](D:/KJWOOK2023/vms/ts-n8n/workflows/Check_My_Schedule/Check_My_Schedule_api.json)
-- [workflows/Check_My_Schedule/Check_My_Schedule_api.ps1](D:/KJWOOK2023/vms/ts-n8n/workflows/Check_My_Schedule/Check_My_Schedule_api.ps1)
+- [workflows/Check_My_Schedule/Check_My_Schedule_design.md](../workflows/Check_My_Schedule/Check_My_Schedule_design.md)
+- [workflows/Check_My_Schedule/Check_My_Schedule_api.json](../workflows/Check_My_Schedule/Check_My_Schedule_api.json)
+- [workflows/Check_My_Schedule/Check_My_Schedule_api.ps1](../workflows/Check_My_Schedule/Check_My_Schedule_api.ps1)
 
 ## Outlook 관련 정리
 
@@ -187,14 +187,14 @@
 
 참고 파일:
 
-- [credentials/vmsworks/vmsworks.env](D:/KJWOOK2023/vms/ts-n8n/credentials/vmsworks/vmsworks.env)
-- [credentials/vmsworks/vmsworks_resource_map.md](D:/KJWOOK2023/vms/ts-n8n/credentials/vmsworks/vmsworks_resource_map.md)
+- [credentials/vmsworks/vmsworks.env](../credentials/vmsworks/vmsworks.env)
+- [credentials/vmsworks/vmsworks_resource_map.md](../credentials/vmsworks/vmsworks_resource_map.md)
 
 ## Teams / Notion 연동 관련 정리
 
 참고 문서:
 
-- [docs/Workflow-Notion-Teams-Interface.md](D:/KJWOOK2023/vms/ts-n8n/docs/Workflow-Notion-Teams-Interface.md)
+- [docs/Workflow-Notion-Teams-Interface.md](Workflow-Notion-Teams-Interface.md)
 
 문서 성격:
 
@@ -210,7 +210,7 @@
 
 참고 문서:
 
-- [docs/n8n_teams_control_design_2026-05-15.md](D:/KJWOOK2023/vms/ts-n8n/docs/n8n_teams_control_design_2026-05-15.md)
+- [docs/n8n_teams_control_design_2026-05-15.md](n8n_teams_control_design_2026-05-15.md)
 
 정리된 결론:
 
@@ -257,7 +257,7 @@
 
 ## 재부팅 후 새 세션에서 바로 하면 되는 순서
 
-1. 이 문서와 [docs/session_handoff_2026-05-06.md](D:/KJWOOK2023/vms/ts-n8n/docs/session_handoff_2026-05-06.md)를 먼저 읽기
+1. 이 문서와 [docs/session_handoff_2026-05-06.md](session_handoff_2026-05-06.md)를 먼저 읽기
 2. 이번에 실제로 이어갈 작업이 `Check_My_Schedule` 확장인지, Outlook 공유 캘린더 정리인지, VMS Works 고도화인지 결정
 3. 필요하면 `n8n.env`와 관련 워크플로우 폴더를 열어 API 스크립트/JSON부터 확인
 4. 운영 상태가 중요하면 문서만 믿지 말고 n8n API로 active 상태와 최근 실행 결과를 재검증

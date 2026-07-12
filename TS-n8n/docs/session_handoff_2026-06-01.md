@@ -1,4 +1,4 @@
-# TS-n8n Session Handoff
+﻿# TS-n8n Session Handoff
 
 ## 목적
 
@@ -12,11 +12,11 @@
 
 ## 작업 루트
 
-- 작업 폴더: `D:\kjwook2023\vms\ts-n8n`
-- 환경 파일: [n8n.env](D:/kjwook2023/vms/ts-n8n/n8n.env)
-- 워크플로우 폴더: [workflows](D:/kjwook2023/vms/ts-n8n/workflows)
-- 공통 인터페이스 문서: [docs/Workflow-Notion-Teams-Interface.md](D:/kjwook2023/vms/ts-n8n/docs/Workflow-Notion-Teams-Interface.md)
-- 이전 handoff: [docs/session_handoff_2026-05-27.md](D:/kjwook2023/vms/ts-n8n/docs/session_handoff_2026-05-27.md)
+- 작업 폴더: `ts-n8n repository root`
+- 환경 파일: [n8n.env](../n8n.env)
+- 워크플로우 폴더: [workflows](../workflows)
+- 공통 인터페이스 문서: [docs/Workflow-Notion-Teams-Interface.md](Workflow-Notion-Teams-Interface.md)
+- 이전 handoff: [docs/session_handoff_2026-05-27.md](session_handoff_2026-05-27.md)
 
 ## 이번 세션 변경 사항
 
@@ -32,11 +32,11 @@
 
 정리 대상:
 
-- 폴더명: [workflows/Notion-In-Review-Inform](D:/kjwook2023/vms/ts-n8n/workflows/Notion-In-Review-Inform)
-- 빌드 스크립트: [scripts/build_notion_in_review_inform.js](D:/kjwook2023/vms/ts-n8n/scripts/build_notion_in_review_inform.js)
-- 워크플로우 JSON: [workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_api.json](D:/kjwook2023/vms/ts-n8n/workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_api.json)
-- 배포 스크립트: [workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_api.ps1](D:/kjwook2023/vms/ts-n8n/workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_api.ps1)
-- 설계 문서: [workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_design.md](D:/kjwook2023/vms/ts-n8n/workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_design.md)
+- 폴더명: [workflows/Notion-In-Review-Inform](../workflows/Notion-In-Review-Inform)
+- 빌드 스크립트: [scripts/build_notion_in_review_inform.js](../scripts/build_notion_in_review_inform.js)
+- 워크플로우 JSON: [workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_api.json](../workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_api.json)
+- 배포 스크립트: [workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_api.ps1](../workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_api.ps1)
+- 설계 문서: [workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_design.md](../workflows/Notion-In-Review-Inform/Notion-In-Review-Inform_design.md)
 
 추가 정리:
 
@@ -82,7 +82,7 @@ powershell -ExecutionPolicy Bypass -File workflows\_generate_active_workflow_doc
 
 갱신한 문서:
 
-- [docs/Workflow-Notion-Teams-Interface.md](D:/kjwook2023/vms/ts-n8n/docs/Workflow-Notion-Teams-Interface.md)
+- [docs/Workflow-Notion-Teams-Interface.md](Workflow-Notion-Teams-Interface.md)
 
 현재 문서 기준:
 
@@ -105,8 +105,8 @@ powershell -ExecutionPolicy Bypass -File workflows\_generate_active_workflow_doc
 
 다음 세션에서는 아래 문서를 기준으로 시작하면 된다.
 
-- 최신 handoff: [docs/session_handoff_2026-06-01.md](D:/kjwook2023/vms/ts-n8n/docs/session_handoff_2026-06-01.md)
-- active workflow 인터페이스 요약: [docs/Workflow-Notion-Teams-Interface.md](D:/kjwook2023/vms/ts-n8n/docs/Workflow-Notion-Teams-Interface.md)
+- 최신 handoff: [docs/session_handoff_2026-06-01.md](session_handoff_2026-06-01.md)
+- active workflow 인터페이스 요약: [docs/Workflow-Notion-Teams-Interface.md](Workflow-Notion-Teams-Interface.md)
 - 개별 워크플로우 설계 문서: `workflows/<workflow-name>/<workflow-name>_design.md`
 
 ## 다음 세션에서 유의할 점
@@ -119,7 +119,7 @@ powershell -ExecutionPolicy Bypass -File workflows\_generate_active_workflow_doc
 
 다음 세션에서 바로 상태를 다시 확인하려면 아래 순서로 보면 된다.
 
-1. [docs/session_handoff_2026-06-01.md](D:/kjwook2023/vms/ts-n8n/docs/session_handoff_2026-06-01.md) 확인
-2. [docs/Workflow-Notion-Teams-Interface.md](D:/kjwook2023/vms/ts-n8n/docs/Workflow-Notion-Teams-Interface.md) 확인
+1. [docs/session_handoff_2026-06-01.md](session_handoff_2026-06-01.md) 확인
+2. [docs/Workflow-Notion-Teams-Interface.md](Workflow-Notion-Teams-Interface.md) 확인
 3. 필요 시 `powershell -ExecutionPolicy Bypass -File workflows\_generate_active_workflow_docs.ps1` 재실행
 4. 특정 워크플로우는 해당 폴더의 `*_api.json`, `*_api.ps1`, `*_design.md` 확인

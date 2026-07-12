@@ -1,4 +1,4 @@
-# TS-n8n Session Handoff
+﻿# TS-n8n Session Handoff
 
 ## 문서 목적
 
@@ -13,10 +13,10 @@
 
 ## 작업 루트
 
-- 작업 루트: `D:\KJWOOK2023\vms\ts-n8n`
-- n8n 환경 파일: [n8n.env](D:/KJWOOK2023/vms/ts-n8n/n8n.env)
-- 워크플로우 폴더: [workflows](D:/KJWOOK2023/vms/ts-n8n/workflows)
-- VMS Works 관련 폴더: [credentials/vmsworks](D:/KJWOOK2023/vms/ts-n8n/credentials/vmsworks)
+- 작업 루트: `ts-n8n repository root`
+- n8n 환경 파일: [n8n.env](../n8n.env)
+- 워크플로우 폴더: [workflows](../workflows)
+- VMS Works 관련 폴더: [credentials/vmsworks](../credentials/vmsworks)
 
 주의:
 
@@ -60,22 +60,22 @@ Active 워크플로우별 폴더 및 3종 문서 구조는 이미 생성되어 �
 
 대표 예시:
 
-- [Check-Weekly-Meeting](D:/KJWOOK2023/vms/ts-n8n/workflows/Check-Weekly-Meeting)
-- [TS-Inform_New_Issue](D:/KJWOOK2023/vms/ts-n8n/workflows/TS-Inform_New_Issue)
-- [Check_My_Schedule](D:/KJWOOK2023/vms/ts-n8n/workflows/Check_My_Schedule)
+- [Check-Weekly-Meeting](../workflows/Check-Weekly-Meeting)
+- [TS-Inform_New_Issue](../workflows/TS-Inform_New_Issue)
+- [Check_My_Schedule](../workflows/Check_My_Schedule)
 
 문서 생성기:
 
-- [workflows/_generate_active_workflow_docs.ps1](D:/KJWOOK2023/vms/ts-n8n/workflows/_generate_active_workflow_docs.ps1)
-- [workflows/_workflow_doc_locale.ko.json](D:/KJWOOK2023/vms/ts-n8n/workflows/_workflow_doc_locale.ko.json)
+- [workflows/_generate_active_workflow_docs.ps1](../workflows/_generate_active_workflow_docs.ps1)
+- [workflows/_workflow_doc_locale.ko.json](../workflows/_workflow_doc_locale.ko.json)
 
 ## 1. Check-Weekly-Meeting 변경 이력
 
 대상 파일:
 
-- [Check-Weekly-Meeting_design.md](D:/KJWOOK2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
-- [Check-Weekly-Meeting_api.json](D:/KJWOOK2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json)
-- [Check-Weekly-Meeting_api.ps1](D:/KJWOOK2023/vms/ts-n8n/workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.ps1)
+- [Check-Weekly-Meeting_design.md](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_design.md)
+- [Check-Weekly-Meeting_api.json](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.json)
+- [Check-Weekly-Meeting_api.ps1](../workflows/Check-Weekly-Meeting/Check-Weekly-Meeting_api.ps1)
 
 원래 문제:
 
@@ -112,9 +112,9 @@ Active 워크플로우별 폴더 및 3종 문서 구조는 이미 생성되어 �
 
 대상 파일:
 
-- [TS-Inform_New_Issue_design.md](D:/KJWOOK2023/vms/ts-n8n/workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_design.md)
-- [TS-Inform_New_Issue_api.json](D:/KJWOOK2023/vms/ts-n8n/workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.json)
-- [TS-Inform_New_Issue_api.ps1](D:/KJWOOK2023/vms/ts-n8n/workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.ps1)
+- [TS-Inform_New_Issue_design.md](../workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_design.md)
+- [TS-Inform_New_Issue_api.json](../workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.json)
+- [TS-Inform_New_Issue_api.ps1](../workflows/TS-Inform_New_Issue/TS-Inform_New_Issue_api.ps1)
 
 원래 구조:
 
@@ -153,8 +153,8 @@ Active 워크플로우별 폴더 및 3종 문서 구조는 이미 생성되어 �
 
 대상 파일:
 
-- [vmsworks.env](D:/KJWOOK2023/vms/ts-n8n/credentials/vmsworks/vmsworks.env)
-- [vmsworks_resource_map.md](D:/KJWOOK2023/vms/ts-n8n/credentials/vmsworks/vmsworks_resource_map.md)
+- [vmsworks.env](../credentials/vmsworks/vmsworks.env)
+- [vmsworks_resource_map.md](../credentials/vmsworks/vmsworks_resource_map.md)
 
 확인한 내용:
 
@@ -246,9 +246,9 @@ Active 워크플로우별 폴더 및 3종 문서 구조는 이미 생성되어 �
 
 대상 파일:
 
-- [Check_My_Schedule_design.md](D:/KJWOOK2023/vms/ts-n8n/workflows/Check_My_Schedule/Check_My_Schedule_design.md)
-- [Check_My_Schedule_api.json](D:/KJWOOK2023/vms/ts-n8n/workflows/Check_My_Schedule/Check_My_Schedule_api.json)
-- [Check_My_Schedule_api.ps1](D:/KJWOOK2023/vms/ts-n8n/workflows/Check_My_Schedule/Check_My_Schedule_api.ps1)
+- [Check_My_Schedule_design.md](../workflows/Check_My_Schedule/Check_My_Schedule_design.md)
+- [Check_My_Schedule_api.json](../workflows/Check_My_Schedule/Check_My_Schedule_api.json)
+- [Check_My_Schedule_api.ps1](../workflows/Check_My_Schedule/Check_My_Schedule_api.ps1)
 
 생성 목적:
 
@@ -313,12 +313,12 @@ Active 워크플로우별 폴더 및 3종 문서 구조는 이미 생성되어 �
 
 ## 바로 참고할 파일 목록
 
-- [n8n.env](D:/KJWOOK2023/vms/ts-n8n/n8n.env)
-- [workflows/Check-Weekly-Meeting](D:/KJWOOK2023/vms/ts-n8n/workflows/Check-Weekly-Meeting)
-- [workflows/TS-Inform_New_Issue](D:/KJWOOK2023/vms/ts-n8n/workflows/TS-Inform_New_Issue)
-- [workflows/Check_My_Schedule](D:/KJWOOK2023/vms/ts-n8n/workflows/Check_My_Schedule)
-- [credentials/vmsworks/vmsworks.env](D:/KJWOOK2023/vms/ts-n8n/credentials/vmsworks/vmsworks.env)
-- [credentials/vmsworks/vmsworks_resource_map.md](D:/KJWOOK2023/vms/ts-n8n/credentials/vmsworks/vmsworks_resource_map.md)
+- [n8n.env](../n8n.env)
+- [workflows/Check-Weekly-Meeting](../workflows/Check-Weekly-Meeting)
+- [workflows/TS-Inform_New_Issue](../workflows/TS-Inform_New_Issue)
+- [workflows/Check_My_Schedule](../workflows/Check_My_Schedule)
+- [credentials/vmsworks/vmsworks.env](../credentials/vmsworks/vmsworks.env)
+- [credentials/vmsworks/vmsworks_resource_map.md](../credentials/vmsworks/vmsworks_resource_map.md)
 
 ## 다음 세션 시작용 요약
 

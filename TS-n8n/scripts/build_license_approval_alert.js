@@ -387,7 +387,7 @@ const buildPayloadCode = [
 const workflow = {
   name: 'License-Approval-Alert',
   nodes: [
-    scheduleNode('Alert Schedule', ['0 50 8 * * 1-5', '0 40 11 * * 1-5', '0 40 13 * * 1-5', '0 20 16 * * 1-5'], [-1160, 0], '5f54525f-b5de-43dd-885d-7fbd1ce508ae'),
+    scheduleNode('Alert Schedule', ['0 0 7 * * 1-5', '0 */20 8-16 * * 1-5', '0 0 18 * * 1-5'], [-1160, 0], '5f54525f-b5de-43dd-885d-7fbd1ce508ae'),
     codeNode('Set Alert Mode', "return [{ json: { runMode: 'alert' } }];", [-920, 0], 'b6f33f34-7af7-4b82-a62d-741a4e76db58'),
     codeNode('Weekday Baseline', weekdayBaselineCode, [-680, 220], '24e44449-6709-470a-a621-c570525c0db8'),
     {

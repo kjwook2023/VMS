@@ -24,7 +24,10 @@
 
 ## 언제 실행되는가
 
-- Alert Schedule: 스케줄 필드: cronExpression; 스케줄 필드: cronExpression; 스케줄 필드: cronExpression; 스케줄 필드: cronExpression
+- Alert Schedule: 스케줄 필드: cronExpression; 스케줄 필드: cronExpression; 스케줄 필드: cronExpression
+- 평일 `07:00 KST` 1회 사전 체크
+- 평일 업무 시간 `08:00 KST` 부터 `16:40 KST` 까지 `20분` 간격 체크
+- 평일 `18:00 KST` 1회 마감 체크
 
 ## 전체 흐름
 

@@ -1,4 +1,4 @@
-# Draft Handoffs
+﻿# Draft Handoffs
 
 This folder stores in-progress handoff documents before they are promoted to confirmed session handoffs.
 
@@ -10,4 +10,4 @@ Promotion target:
 
 - `docs/session_handoff_YYYY-MM-DD.md`
 
-See [Handoff-Process.md](D:/kjwook2023/vms/ts-n8n/docs/Handoff-Process.md) for the operating rule.
+See [Handoff-Process.md](../Handoff-Process.md) for the operating rule.

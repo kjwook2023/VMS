@@ -53,7 +53,7 @@
 - 역할: 일반 처리 노드입니다. 정확한 의도는 추가 확인이 필요합니다.
 - 필요한 이유: 입력, 처리, 출력 단계 중 한 부분을 담당하기 위해 존재합니다.
 - 해석 근거: type=n8n-nodes-base.github
-- Credential: jwkim-github
+- Credential: `__N8N_GITHUB_CREDENTIAL_NAME__` placeholder in repo export
 
 ### Code in JavaScript
 
@@ -141,7 +141,7 @@
 
 ## Credential 참조
 
-- Node Get-OpenPR-Mozart2.0 -> githubApi / jwkim-github (o72tcAaFcQlmQR4d)
+- Node Get-OpenPR-Mozart2.0 -> githubApi / `__N8N_GITHUB_CREDENTIAL_NAME__` (repo placeholder; deploy-time env injection)
 - Node Send a message -> slackApi / tsbot-slackAPI (pOho5rxIJo9ZU9ee)
 - Node Holiday DB Fallback -> microsoftSql / TsMgmt(DevTest_SQL2022_26) (2dZb5OQPbTyO3052)
 
@@ -149,6 +149,7 @@
 
 - JSON payload: github-pr-monitor_api.json
 - PowerShell upsert script: github-pr-monitor_api.ps1
+- Deploy note: set `N8N_GITHUB_CREDENTIAL_NAME` before running the upsert script from this repo-safe export
 
 ## JSON 구성
 

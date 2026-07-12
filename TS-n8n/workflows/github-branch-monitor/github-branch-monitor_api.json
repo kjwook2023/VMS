@@ -1,0 +1,618 @@
+{
+    "name": "github-branch-monitor",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "triggerAtDay": [
+                                1,
+                                2,
+                                3,
+                                4,
+                                5
+                            ],
+                            "triggerAtHour": 7,
+                            "triggerAtMinute": 55
+                        },
+                        {
+                            "field": "weeks",
+                            "triggerAtDay": [
+                                1,
+                                2,
+                                3,
+                                4,
+                                5
+                            ],
+                            "triggerAtHour": 13,
+                            "triggerAtMinute": 55
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "position": [
+                -360,
+                0
+            ],
+            "typeVersion": 1.3,
+            "id": "78b62e8e-f5d7-4d00-9305-6714a352ce95",
+            "alwaysOutputData": true,
+            "retryOnFail": true,
+            "name": "Schedule Trigger"
+        },
+        {
+            "parameters": {
+                "jsCode": "const source = $input.first()?.json ?? {};\nconst now = new Date();\nconst parts = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'Asia/Seoul',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n  weekday: 'short',\n  hour: '2-digit',\n  minute: '2-digit',\n  hour12: false,\n}).formatToParts(now);\n\nconst year = parts.find((p) => p.type === 'year')?.value;\nconst month = parts.find((p) => p.type === 'month')?.value;\nconst day = parts.find((p) => p.type === 'day')?.value;\nconst weekdayName = parts.find((p) => p.type === 'weekday')?.value;\nconst hour = parts.find((p) => p.type === 'hour')?.value;\nconst minute = parts.find((p) => p.type === 'minute')?.value;\n\nif (!year || !month || !day || !weekdayName || !hour || !minute) {\n  throw new Error('Failed to resolve current date in Asia/Seoul.');\n}\n\nconst todayInt = Number(`${year}${month}${day}`);\nconst todayDate = `${year}-${month}-${day}`;\nconst todayMMDD = `${month}${day}`;\nconst currentHour = Number(hour);\nconst currentMinute = Number(minute);\nconst isWeekend = ['Sat', 'Sun'].includes(weekdayName);\nconst checkSlot = currentHour < 12 ? 'morning' : 'afternoon';\nconst checkSlotLabel = checkSlot === 'morning' ? '오전 07:55' : '오후 13:55';\nconst compareSinceLabel = checkSlot === 'morning' ? '이전 체크 이후' : '오전 07:55 체크 이후';\nconst checkTime = new Intl.DateTimeFormat('sv-SE', {\n  timeZone: 'Asia/Seoul',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n  hour: '2-digit',\n  minute: '2-digit',\n  second: '2-digit',\n  hour12: false,\n}).format(now) + ' KST';\n\nreturn [{\n  json: {\n    ...source,\n    Year: Number(year),\n    Month: Number(month),\n    Day: Number(day),\n    Hour: currentHour,\n    Minute: currentMinute,\n    WeekdayName: weekdayName,\n    IsWeekend: isWeekend,\n    DefaultIsHoliday: isWeekend,\n    DefaultHolidayName: isWeekend ? '주말' : '평일',\n    todayInt,\n    todayDate,\n    todayMMDD,\n    checkSlot,\n    checkSlotLabel,\n    compareSinceLabel,\n    checkTime,\n  },\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "position": [
+                -360,
+                160
+            ],
+            "typeVersion": 2,
+            "id": "81c42bd7-9129-40a8-bc77-414de550f75b",
+            "alwaysOutputData": true,
+            "name": "Weekday Baseline"
+        },
+        {
+            "parameters": {
+                "url": "=http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?solYear={{ $json['Year'] }}&numOfRows=50&ServiceKey=ea205130648aa0e11f1cc778bef29d18ef68b212e587c5590792dbd4f0a6b5c0",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                -120,
+                160
+            ],
+            "typeVersion": 4.3,
+            "id": "3cc1bd01-b304-4ca4-91fa-1ecea6f5dce4",
+            "alwaysOutputData": true,
+            "onError": "continueRegularOutput",
+            "name": "HTTP Request"
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "=DECLARE @d DATE = CAST('{{ $('Weekday Baseline').item.json.todayDate }}' AS date);\nSELECT\n    CONVERT(VARCHAR(8), @d, 112) AS check_date,\n    CAST(CASE WHEN EXISTS (\n        SELECT 1\n        FROM TsMgmt.dbo.HolidayCalendarKR\n        WHERE HolidayDate = @d\n    ) THEN 1 ELSE 0 END AS bit) AS found_in_db,\n    ISNULL((SELECT TOP 1 HolidayName FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), '') AS holiday_name,\n    ISNULL((SELECT TOP 1 SourceType FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), '') AS source_type,\n    ISNULL((SELECT TOP 1 SourceYear FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), 0) AS source_year;"
+            },
+            "type": "n8n-nodes-base.microsoftSql",
+            "position": [
+                120,
+                160
+            ],
+            "typeVersion": 1.1,
+            "id": "f8c0a6ab-9666-4b2f-b8cb-f350dc68f0fd",
+            "alwaysOutputData": true,
+            "onError": "continueRegularOutput",
+            "credentials": {
+                "microsoftSql": {
+                    "id": "2dZb5OQPbTyO3052",
+                    "name": "TsMgmt(DevTest_SQL2022_26)"
+                }
+            },
+            "name": "Holiday DB Fallback"
+        },
+        {
+            "parameters": {
+                "jsCode": "const recurringHolidays = [\n  { date: '0501', dateName: '근로자의 날' },\n  { date: '1231', dateName: '창립기념일' },\n];\n\nconst baseline = $('Weekday Baseline').first().json;\nconst apiPayload = $('HTTP Request').first()?.json ?? {};\nconst dbPayload = $('Holiday DB Fallback').first()?.json ?? {};\n\nfunction normalizeApiItems(raw) {\n  if (!raw) return [];\n  return Array.isArray(raw) ? raw : [raw];\n}\n\nconst apiItems = !apiPayload.error\n  ? normalizeApiItems(apiPayload.response?.body?.items?.item)\n  : [];\nconst apiMatch = apiItems.find((item) => String(item?.locdate ?? '') === String(baseline.todayInt));\nconst customMatch = recurringHolidays.find((item) => item.date === baseline.todayMMDD);\nconst dbFound = !dbPayload.error && [true, 1, '1', 'true'].includes(dbPayload.found_in_db);\n\nlet isHoliday = !!baseline.DefaultIsHoliday;\nlet holidayName = baseline.DefaultHolidayName || (isHoliday ? '주말' : '평일');\nlet holidayLookupSource = isHoliday ? 'default-weekend' : 'default-weekday';\n\nif (apiMatch) {\n  isHoliday = true;\n  holidayName = String(apiMatch.dateName || '공휴일');\n  holidayLookupSource = 'api';\n} else if (customMatch) {\n  isHoliday = true;\n  holidayName = customMatch.dateName;\n  holidayLookupSource = 'custom';\n} else if (dbFound) {\n  isHoliday = true;\n  holidayName = String(dbPayload.holiday_name || '공휴일');\n  holidayLookupSource = dbPayload.source_type ? `db:${dbPayload.source_type}` : 'db';\n}\n\nreturn [{\n  json: {\n    check_date: baseline.todayInt,\n    today_date: baseline.todayDate,\n    is_holiday: isHoliday,\n    holiday_name: holidayName,\n    is_weekend: !!baseline.IsWeekend,\n    weekday_name: baseline.WeekdayName,\n    checkSlot: baseline.checkSlot || '',\n    checkSlotLabel: baseline.checkSlotLabel || '',\n    compareSinceLabel: baseline.compareSinceLabel || '이전 체크 이후',\n    checkTime: baseline.checkTime || '',\n    holiday_lookup_source: holidayLookupSource,\n    holiday_lookup_failed: Boolean(apiPayload.error) && Boolean(dbPayload.error),\n    api_error: apiPayload.error?.message || apiPayload.error || '',\n    db_error: dbPayload.error || ''\n  }\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "position": [
+                360,
+                160
+            ],
+            "typeVersion": 2,
+            "id": "7156a2c1-72f2-4368-8683-fdfdf00c90bb",
+            "alwaysOutputData": true,
+            "name": "Holiday Judge"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "1d7a729b-06fd-4f53-a9a1-3730e1fbef44",
+                            "leftValue": "={{ $json.is_holiday }}",
+                            "rightValue": false,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "position": [
+                560,
+                160
+            ],
+            "typeVersion": 2.2,
+            "id": "4cfabff5-bf96-4f9f-ab8d-06da1e4ddb9b",
+            "name": "If"
+        },
+        {
+            "parameters": {
+                "resource": "databasePage",
+                "operation": "getAll",
+                "databaseId": {
+                    "__rl": true,
+                    "value": "205cb995-8309-80e4-ac2a-c8589a1783eb",
+                    "mode": "list",
+                    "cachedResultName": "TS Calendar DB",
+                    "cachedResultUrl": "https://www.notion.so/205cb995830980e4ac2ac8589a1783eb"
+                },
+                "options": {
+                    "sort": {
+                        "sortValue": [
+                            {
+                                "key": "Date|date",
+                                "direction": "descending"
+                            }
+                        ]
+                    }
+                }
+            },
+            "type": "n8n-nodes-base.notion",
+            "position": [
+                800,
+                320
+            ],
+            "typeVersion": 2.2,
+            "id": "9639eaf4-6d5f-493e-8d95-037b0d3f7dc5",
+            "alwaysOutputData": true,
+            "onError": "continueRegularOutput",
+            "credentials": {
+                "notionApi": {
+                    "id": "LrLyYGhPvHMbPfZm",
+                    "name": "tsupport API"
+                }
+            },
+            "name": "Vacation Calendar"
+        },
+        {
+            "parameters": {
+                "jsCode": "const holiday = $('Holiday Judge').first()?.json ?? {};\nconst vacationItems = $input.all();\n\nconst NONE = '없음';\nconst people = [\n  { name: '김민영', email: 'mykim@vms-solutions.com' },\n  { name: '조현재', email: 'jyi30@vms-solutions.com' },\n  { name: '김진욱', email: 'jwkim@vms-solutions.com' },\n];\n\nfunction normalize(value) { return String(value ?? '').normalize('NFC').replace(/\\\\s+/g, '').toLowerCase(); }\nfunction contains(value, keyword) { return normalize(value).includes(normalize(keyword)); }\nfunction collectStrings(value, out = [], depth = 0) {\n  if (depth > 10 || value == null) return out;\n  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') { out.push(String(value)); return out; }\n  if (Array.isArray(value)) { for (const item of value) collectStrings(item, out, depth + 1); return out; }\n  if (typeof value === 'object') { for (const nested of Object.values(value)) collectStrings(nested, out, depth + 1); }\n  return out;\n}\nfunction ymds(text) { return String(text ?? '').match(/\\\\d{4}-\\\\d{2}-\\\\d{2}/g) || []; }\nfunction ymd(text) { const match = String(text ?? '').match(/\\\\d{4}-\\\\d{2}-\\\\d{2}/); return match ? match[0] : ''; }\nfunction ranges(item) {\n  const found = [];\n  const uniq = new Set();\n  function push(label, start, end) {\n    const s = ymd(start);\n    const e = ymd(end || start);\n    if (!s) return;\n    const key = label + '|' + s + '|' + e;\n    if (uniq.has(key)) return;\n    uniq.add(key);\n    found.push({ start: s, end: e || s });\n  }\n  function walk(value, label, depth) {\n    if (depth > 8 || value == null) return;\n    if (typeof value === 'string') { const items = ymds(value); if (items.length === 1) push(label, items[0], items[0]); if (items.length >= 2) push(label, items[0], items[1]); return; }\n    if (typeof value === 'number' || typeof value === 'boolean') return;\n    if (Array.isArray(value)) { value.forEach((item, idx) => walk(item, label + \"[\" + idx + \"]\", depth + 1)); return; }\n    if (typeof value === 'object') {\n      if ('start' in value && ymd(value.start)) push(label + '.start', value.start, value.end || value.start);\n      if ('date' in value && value.date && typeof value.date === 'object' && ymd(value.date.start)) push(label + '.date', value.date.start, value.date.end || value.date.start);\n      if ('property_date' in value && value.property_date && typeof value.property_date === 'object' && ymd(value.property_date.start)) push(label + '.property_date', value.property_date.start, value.property_date.end || value.property_date.start);\n      for (const [key, nested] of Object.entries(value)) walk(nested, label + \".\" + key, depth + 1);\n    }\n  }\n  walk(item?.json ?? item, 'root', 0);\n  return found;\n}\nfunction isVacationText(text) { return ['휴가', '연차', '반차', '오전반차', '오후반차', '안식월', '공가', '공휴일', '휴일', 'vacation', 'leave', 'pto', 'dayoff', 'off'].some((keyword) => contains(text, keyword)); }\n\nconst today = String(holiday.today_date || '');\nconst vacationLookupFailed = vacationItems.some((item) => item?.json?.error);\nconst todayVacationItems = !today || vacationLookupFailed ? [] : vacationItems.filter((item) => {\n  const text = collectStrings(item?.json ?? item).join(\" \");\n  if (!isVacationText(text)) return false;\n  const itemRanges = ranges(item);\n  return itemRanges.length > 0 && itemRanges.some((range) => range.start <= today && today <= range.end);\n});\nconst vacationUsers = people.filter((person) => todayVacationItems.some((item) => {\n  const text = collectStrings(item?.json ?? item).join(\" \");\n  return contains(text, person.name) || contains(text, person.email);\n}));\nconst vacationSet = new Set(vacationUsers.map((person) => person.email));\nconst activeUsers = people.filter((person) => !vacationSet.has(person.email));\nconst teamsEntities = activeUsers.map((person) => ({\n  type: \"mention\",\n  text: \"<at>\" + person.name + \"</at>\",\n  mentioned: { id: person.email, name: person.name },\n}));\nconst teamsMentionText = activeUsers.map((person) => \"<at>\" + person.name + \"</at>\").join(\", \");\nconst activeUsersText = activeUsers.length > 0 ? activeUsers.map((person) => person.name).join(\", \") : NONE;\nconst vacationUsersText = vacationUsers.length > 0 ? vacationUsers.map((person) => person.name).join(\", \") : NONE;\nconst vacationFallbackText = vacationLookupFailed ? \"휴가 정보 조회에 실패해 전원을 근무 대상으로 간주했습니다.\" : \"\";\nconst teamsAttentionText = activeUsers.length > 0\n  ? `${teamsMentionText} 브랜치 상태 확인 알림입니다.`\n  : \"담당자 3명 모두 휴가 중입니다. 상태 알림만 전송합니다.\";\n\nreturn [{\n  json: {\n    ...holiday,\n    watchUserCount: people.length,\n    activeUsersText,\n    vacationUsersText,\n    teamsEntities,\n    teamsAttentionText,\n    vacationFallbackText,\n    allUsersOnVacation: activeUsers.length === 0,\n  },\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "position": [
+                1040,
+                320
+            ],
+            "typeVersion": 2,
+            "id": "49ad58d9-f11b-461b-93f8-eb26925b5d10",
+            "alwaysOutputData": true,
+            "name": "Resolve Notification Targets"
+        },
+        {
+            "parameters": {
+                "jsCode": "const source = $input.first()?.json ?? {};\n\nconst monitoredBranches = [\n  { owner: 'vmslab', repository: 'Mozart2.0', branch: 'Release/2026.126.1', teamsLabel: 'github-branch-monitor 상태 알림' },\n  { owner: 'vmslab', repository: 'mozart-ui-app', branch: 'Release/2026.126.1', teamsLabel: 'github-branch-monitor 상태 알림' },\n];\n\nreturn monitoredBranches.map((cfg) => ({\n  json: {\n    ...source,\n    repoOwner: cfg.owner,\n    repository: cfg.repository,\n    branch: cfg.branch,\n    branchLabel: cfg.teamsLabel || `${cfg.owner}/${cfg.repository}:${cfg.branch}`,\n    branchKey: `${cfg.owner}/${cfg.repository}:${cfg.branch}`,\n    checkTime: source.checkTime || '',\n    checkSlot: source.checkSlot || '',\n    checkSlotLabel: source.checkSlotLabel || '',\n    compareSinceLabel: source.compareSinceLabel || '이전 체크 이후',\n    branchUrl: `https://github.com/${cfg.owner}/${cfg.repository}/tree/${encodeURIComponent(cfg.branch)}`,\n    branchApiUrl: `https://api.github.com/repos/${cfg.owner}/${cfg.repository}/branches/${encodeURIComponent(cfg.branch)}`,\n    compareBaseUrl: `https://api.github.com/repos/${cfg.owner}/${cfg.repository}/compare`,\n  },\n}));"
+            },
+            "type": "n8n-nodes-base.code",
+            "position": [
+                800,
+                160
+            ],
+            "typeVersion": 2,
+            "id": "d264cc1e-3516-4388-bb08-619a914ca4ad",
+            "alwaysOutputData": true,
+            "name": "Branch Monitor Config"
+        },
+        {
+            "parameters": {
+                "url": "={{ $json.branchApiUrl }}",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "githubApi",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/vnd.github+json"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1040,
+                160
+            ],
+            "typeVersion": 4.3,
+            "id": "6f069dfe-20c7-4431-9f3f-0c1d8605fd4b",
+            "alwaysOutputData": true,
+            "credentials": {
+                "githubApi": {
+                    "id": "o72tcAaFcQlmQR4d",
+                    "name": "__N8N_GITHUB_CREDENTIAL_NAME__"
+                }
+            },
+            "name": "Fetch Branch Head"
+        },
+        {
+            "parameters": {
+                "jsCode": "const configItems = $('Branch Monitor Config').all().map((item) => item.json ?? {});\nconst branchPayloadItems = $input.all().map((item) => item.json ?? {});\nconst workflowStaticData = $getWorkflowStaticData('global');\n\nif (!workflowStaticData.githubBranchMonitor) {\n  workflowStaticData.githubBranchMonitor = {};\n}\n\nconst branchState = workflowStaticData.githubBranchMonitor;\n\nreturn branchPayloadItems.map((branchPayload, index) => {\n  const config = configItems[index] || {};\n  const previousState = branchState[config.branchKey] || null;\n  const currentSha = branchPayload.commit?.sha || '';\n  const currentCommit = branchPayload.commit?.commit || {};\n  const currentCommitDate = currentCommit.committer?.date || currentCommit.author?.date || '';\n  const currentCommitMessage = currentCommit.message || '';\n  const currentCommitAuthor = currentCommit.committer?.name || currentCommit.author?.name || '';\n  const previousSha = previousState?.lastCheckedSha || '';\n  const previousCheckedAt = previousState?.lastCheckedAt || '';\n  const isInitialization = !previousSha;\n  const hasChanged = Boolean(previousSha) && previousSha !== currentSha;\n\n  if (!currentSha) {\n    throw new Error(`Failed to resolve branch head SHA for ${config.branchKey}.`);\n  }\n\n  return {\n    json: {\n      ...config,\n      currentSha,\n      currentCommitDate,\n      currentCommitMessage,\n      currentCommitAuthor,\n      previousSha,\n      previousCheckedAt,\n      isInitialization,\n      hasChanged,\n      shouldCompare: hasChanged,\n      compareUrl: hasChanged ? `${config.compareBaseUrl}/${previousSha}...${currentSha}` : '',\n    },\n  };\n});"
+            },
+            "type": "n8n-nodes-base.code",
+            "position": [
+                1280,
+                160
+            ],
+            "typeVersion": 2,
+            "id": "b4de7d97-f583-4521-bbfd-03b402a1fb58",
+            "alwaysOutputData": true,
+            "name": "Build Comparison State"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "b1621960-ddaa-47c8-8eff-f85a90003d0d",
+                            "leftValue": "={{ $json.shouldCompare }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "position": [
+                1520,
+                160
+            ],
+            "typeVersion": 2.2,
+            "id": "1d1c5f88-e5fb-4f25-b690-94122ad576db",
+            "name": "If Branch Changed"
+        },
+        {
+            "parameters": {
+                "url": "={{ $json.compareUrl }}",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "githubApi",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/vnd.github+json"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1760,
+                80
+            ],
+            "typeVersion": 4.3,
+            "id": "8b463f7f-2187-46c8-a0f4-a1c2867ae46f",
+            "alwaysOutputData": true,
+            "onError": "continueRegularOutput",
+            "credentials": {
+                "githubApi": {
+                    "id": "o72tcAaFcQlmQR4d",
+                    "name": "__N8N_GITHUB_CREDENTIAL_NAME__"
+                }
+            },
+            "name": "Fetch Branch Compare"
+        },
+        {
+            "parameters": {
+                "jsCode": "const notificationTarget = $('Resolve Notification Targets').first()?.json ?? {};\nconst stateItems = $('If Branch Changed').all().map((item) => item.json ?? {});\nconst compareItems = $('Fetch Branch Compare').all().map((item) => item.json ?? {});\n\nconst shortSha = (sha) => String(sha || '').slice(0, 7);\nconst firstLine = (text) => String(text || '').split('\\n')[0].trim();\nconst formatKst = (iso) => {\n  if (!iso) return '';\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Asia/Seoul',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit',\n    hour: '2-digit',\n    minute: '2-digit',\n    hour12: false,\n  }).format(new Date(iso)) + ' KST';\n};\n\nreturn compareItems.map((compare, index) => {\n  const state = stateItems[index] || {};\n  const commits = Array.isArray(compare.commits) ? compare.commits : [];\n  const files = Array.isArray(compare.files) ? compare.files : [];\n  const compareError = compare.error?.message || compare.message || '';\n  const teamsEntities = Array.isArray(notificationTarget.teamsEntities) ? notificationTarget.teamsEntities : [];\n  const teamsAttentionText = notificationTarget.teamsAttentionText || '';\n  const activeUsersText = notificationTarget.activeUsersText || '없음';\n  const vacationUsersText = notificationTarget.vacationUsersText || '없음';\n  const teamsWarningText = notificationTarget.vacationFallbackText || '';\n\n  let teamsSummary = `${state.checkSlotLabel} 체크에서 브랜치 변경이 감지되었습니다. (${commits.length} commits)`;\n  let teamsDetails = '';\n\n  if (compareError) {\n    teamsSummary = `${state.checkSlotLabel} 체크에서 브랜치 SHA 변경은 감지됐지만 compare 상세 조회는 실패했습니다.`;\n    teamsDetails = [\n      `확인 회차: ${state.checkSlotLabel}`,\n      `변경 기준: ${state.compareSinceLabel}`,\n      `저장소: ${state.repoOwner}/${state.repository}`,\n      `브랜치: ${state.branch}`,\n      `이전 SHA: ${shortSha(state.previousSha)}`,\n      `현재 SHA: ${shortSha(state.currentSha)}`,\n      `브랜치 링크: ${state.branchUrl}`,\n      `오류: ${compareError}`\n    ].join('\\n');\n  } else {\n    const commitLines = commits.slice(0, 10).map((commit, lineIndex) => {\n      const message = firstLine(commit.commit?.message || '(no message)');\n      const author = commit.commit?.author?.name || commit.author?.login || 'unknown';\n      const date = formatKst(commit.commit?.author?.date || commit.commit?.committer?.date || '');\n      const link = commit.html_url ? `\\n링크: ${commit.html_url}` : '';\n      return `${lineIndex + 1}. ${message}\\n작성자: ${author} | 시각: ${date} | SHA: ${shortSha(commit.sha)}${link}`;\n    });\n\n    const fileLines = files.slice(0, 10).map((file, lineIndex) => {\n      const changes = Number.isFinite(file.changes) ? ` (${file.changes} changes)` : '';\n      return `${lineIndex + 1}. [${file.status}] ${file.filename}${changes}`;\n    });\n\n    teamsDetails = [\n      `확인 회차: ${state.checkSlotLabel}`,\n      `변경 기준: ${state.compareSinceLabel}`,\n      `비교 SHA: ${shortSha(state.previousSha)} -> ${shortSha(state.currentSha)}`,\n      `브랜치 링크: ${state.branchUrl}`,\n      `비교 링크: ${compare.html_url || state.branchUrl}`,\n      '',\n      `커밋 ${commits.length}건`,\n      commitLines.length > 0 ? commitLines.join('\\n\\n') : '-',\n      '',\n      `파일 변경 ${files.length}건`,\n      fileLines.length > 0 ? fileLines.join('\\n') : '-'\n    ].join('\\n');\n  }\n\n  return {\n    json: {\n      ...state,\n      compareError,\n      compareHtmlUrl: compare.html_url || '',\n      commitCount: commits.length,\n      fileCount: files.length,\n      teamsEntities,\n      teamsAttentionText,\n      activeUsersText,\n      vacationUsersText,\n      teamsWarningText,\n      teamsTitle: state.branchLabel || 'github-branch-monitor 상태 알림',\n      teamsSummary: `${state.repoOwner}/${state.repository} / ${state.branch} - ${teamsSummary}`,\n      teamsDetails,\n      currentCommitDateText: formatKst(state.currentCommitDate),\n    },\n  };\n});"
+            },
+            "type": "n8n-nodes-base.code",
+            "position": [
+                2000,
+                80
+            ],
+            "typeVersion": 2,
+            "id": "c48f2661-6345-46f8-bfa2-ad94ae5d855e",
+            "alwaysOutputData": true,
+            "name": "Build Teams Payload"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://redacted.invalid/powerautomate/github-branch-monitor-webhook",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ ({ type: 'message', summary: $json.teamsSummary, text: $json.teamsSummary, attachments: [{ contentType: 'application/vnd.microsoft.card.adaptive', content: { type: 'AdaptiveCard', body: [{ type: 'TextBlock', text: $json.teamsTitle, weight: 'Bolder', size: 'Medium', wrap: true }, { type: 'TextBlock', text: $json.teamsAttentionText || '', wrap: true, spacing: 'Small', isVisible: Boolean($json.teamsAttentionText) }, { type: 'TextBlock', text: $json.teamsSummary, wrap: true, spacing: 'Small' }, { type: 'FactSet', facts: [{ title: '알림 대상', value: $json.activeUsersText || '없음' }, { title: '휴가자', value: $json.vacationUsersText || '없음' }, { title: '저장소', value: `${$json.repoOwner}/${$json.repository}` }, { title: '브랜치', value: $json.branch }, { title: '확인 회차', value: $json.checkSlotLabel || '' }, { title: '변경 기준', value: $json.compareSinceLabel || '' }, { title: '비교 범위', value: `${String($json.previousSha || '').slice(0, 7)} -> ${String($json.currentSha || '').slice(0, 7)}` }, { title: '커밋 수', value: String($json.commitCount ?? 0) + '건' }, { title: '파일 수', value: String($json.fileCount ?? 0) + '건' }, { title: '마지막 커밋 시각', value: $json.currentCommitDateText || '' }, { title: '확인 시각', value: $json.checkTime || '' }] }, { type: 'TextBlock', text: $json.teamsWarningText || '', wrap: true, spacing: 'Medium', color: 'Attention', isVisible: Boolean($json.teamsWarningText) }, { type: 'TextBlock', text: $json.teamsDetails || '', wrap: true, spacing: 'Medium', isVisible: Boolean($json.teamsDetails) }], msteams: { entities: Array.isArray($json.teamsEntities) ? $json.teamsEntities : [] }, '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json', version: '1.4' } }] }) }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                2240,
+                80
+            ],
+            "typeVersion": 4.2,
+            "id": "9e612812-2af7-4ce9-ae6a-536355513f55",
+            "name": "Teams Webhook"
+        },
+        {
+            "parameters": {
+                "jsCode": "const items = $input.all().map((entry) => entry.json ?? {});\nconst workflowStaticData = $getWorkflowStaticData('global');\n\nif (!workflowStaticData.githubBranchMonitor) {\n  workflowStaticData.githubBranchMonitor = {};\n}\n\nreturn items.map((item) => {\n  const existing = workflowStaticData.githubBranchMonitor[item.branchKey] || {};\n  workflowStaticData.githubBranchMonitor[item.branchKey] = {\n    lastCheckedSha: item.currentSha,\n    lastCheckedAt: new Date().toISOString(),\n    lastCommitDate: item.currentCommitDate || '',\n    lastCommitMessage: item.currentCommitMessage || '',\n    lastCommitAuthor: item.currentCommitAuthor || '',\n    lastNotifiedSha: existing.lastNotifiedSha || '',\n    lastNotifiedAt: existing.lastNotifiedAt || '',\n    branchUrl: item.branchUrl || '',\n    repository: `${item.repoOwner}/${item.repository}`,\n    branch: item.branch || ''\n  };\n\n  return {\n    json: {\n      ...item,\n      stateSaved: true,\n      notifySkippedReason: item.isInitialization ? 'initialized-baseline' : 'no-change'\n    }\n  };\n});"
+            },
+            "type": "n8n-nodes-base.code",
+            "position": [
+                1760,
+                280
+            ],
+            "typeVersion": 2,
+            "id": "4390b373-8b59-44c6-b4ff-67fabd4fa42b",
+            "alwaysOutputData": true,
+            "name": "Persist Branch State"
+        },
+        {
+            "parameters": {
+                "jsCode": "const items = $('Build Teams Payload').all().map((entry) => entry.json ?? {});\nconst workflowStaticData = $getWorkflowStaticData('global');\n\nif (!workflowStaticData.githubBranchMonitor) {\n  workflowStaticData.githubBranchMonitor = {};\n}\n\nreturn items.map((item) => {\n  workflowStaticData.githubBranchMonitor[item.branchKey] = {\n    lastCheckedSha: item.currentSha,\n    lastCheckedAt: new Date().toISOString(),\n    lastCommitDate: item.currentCommitDate || '',\n    lastCommitMessage: item.currentCommitMessage || '',\n    lastCommitAuthor: item.currentCommitAuthor || '',\n    lastNotifiedSha: item.currentSha,\n    lastNotifiedAt: new Date().toISOString(),\n    branchUrl: item.branchUrl || '',\n    repository: `${item.repoOwner}/${item.repository}`,\n    branch: item.branch || ''\n  };\n\n  return {\n    json: {\n      ...item,\n      stateSaved: true,\n      notified: true\n    }\n  };\n});"
+            },
+            "type": "n8n-nodes-base.code",
+            "position": [
+                2480,
+                80
+            ],
+            "typeVersion": 2,
+            "id": "060d0f5c-0b13-4f03-a90c-70e878f05bd3",
+            "alwaysOutputData": true,
+            "name": "Persist Alerted State"
+        },
+        {
+            "parameters": {
+                "jsCode": "const notificationTarget = $('Resolve Notification Targets').first()?.json ?? {};\nconst items = $('Persist Branch State').all().map((entry) => entry.json ?? {});\nconst allStates = $('Build Comparison State').all().map((entry) => entry.json ?? {});\n\nif (items.length === 0 || allStates.length === 0) {\n  return [];\n}\n\nconst allNoChange = allStates.every((item) => !item.hasChanged);\nconst anyInitialization = allStates.some((item) => item.isInitialization);\n\nif (!allNoChange || anyInitialization) {\n  return [];\n}\n\nconst first = allStates[0] || {};\nconst repositoriesText = allStates\n  .map((item) => `${item.repoOwner}/${item.repository}`)\n  .join(', ');\n\nreturn [{\n  json: {\n    teamsTitle: 'github-branch-monitor 상태 알림',\n    teamsSummary: `${first.checkSlotLabel || ''} 체크 결과 변경 사항이 없습니다.`,\n    teamsDetails: '',\n    teamsAttentionText: '',\n    activeUsersText: '없음',\n    vacationUsersText: notificationTarget.vacationUsersText || '없음',\n    teamsEntities: [],\n    teamsWarningText: notificationTarget.vacationFallbackText || '',\n    checkSlotLabel: first.checkSlotLabel || '',\n    compareSinceLabel: first.compareSinceLabel || '이전 체크 이후',\n    checkTime: first.checkTime || '',\n    branchCount: allStates.length,\n    repositoriesText,\n  },\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "position": [
+                2000,
+                280
+            ],
+            "typeVersion": 2,
+            "id": "4f751426-1777-4575-9b8c-010fd4d39f0d",
+            "alwaysOutputData": true,
+            "name": "Build No Change Payload"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://redacted.invalid/powerautomate/github-branch-monitor-webhook",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ ({ type: 'message', summary: $json.teamsSummary, text: $json.teamsSummary, attachments: [{ contentType: 'application/vnd.microsoft.card.adaptive', content: { type: 'AdaptiveCard', body: [{ type: 'TextBlock', text: $json.teamsTitle, weight: 'Bolder', size: 'Medium', wrap: true }, { type: 'TextBlock', text: $json.teamsAttentionText || '', wrap: true, spacing: 'Small', isVisible: Boolean($json.teamsAttentionText) }, { type: 'TextBlock', text: $json.teamsSummary, wrap: true, spacing: 'Small' }, { type: 'FactSet', facts: [{ title: '알림 대상', value: $json.activeUsersText || '없음' }, { title: '휴가자', value: $json.vacationUsersText || '없음' }, { title: '감시 대상', value: String($json.branchCount ?? 0) + '개 브랜치' }, { title: '저장소', value: $json.repositoriesText || '' }, { title: '확인 회차', value: $json.checkSlotLabel || '' }, { title: '확인 시각', value: $json.checkTime || '' }] }, { type: 'TextBlock', text: $json.teamsWarningText || '', wrap: true, spacing: 'Medium', color: 'Attention', isVisible: Boolean($json.teamsWarningText) }], msteams: { entities: Array.isArray($json.teamsEntities) ? $json.teamsEntities : [] }, '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json', version: '1.4' } }] }) }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                2240,
+                280
+            ],
+            "typeVersion": 4.2,
+            "id": "c6a225cd-b344-48e2-a4a6-a1d6af47b766",
+            "name": "Teams Webhook No Change"
+        }
+    ],
+    "connections": {
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Weekday Baseline",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Weekday Baseline": {
+            "main": [
+                [
+                    {
+                        "node": "HTTP Request",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTTP Request": {
+            "main": [
+                [
+                    {
+                        "node": "Holiday DB Fallback",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Holiday DB Fallback": {
+            "main": [
+                [
+                    {
+                        "node": "Holiday Judge",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Holiday Judge": {
+            "main": [
+                [
+                    {
+                        "node": "If",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If": {
+            "main": [
+                [
+                    {
+                        "node": "Vacation Calendar",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Vacation Calendar": {
+            "main": [
+                [
+                    {
+                        "node": "Resolve Notification Targets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Resolve Notification Targets": {
+            "main": [
+                [
+                    {
+                        "node": "Branch Monitor Config",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Branch Monitor Config": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Branch Head",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Branch Head": {
+            "main": [
+                [
+                    {
+                        "node": "Build Comparison State",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Comparison State": {
+            "main": [
+                [
+                    {
+                        "node": "If Branch Changed",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If Branch Changed": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Branch Compare",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Persist Branch State",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Branch Compare": {
+            "main": [
+                [
+                    {
+                        "node": "Build Teams Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Teams Payload": {
+            "main": [
+                [
+                    {
+                        "node": "Teams Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Teams Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Persist Alerted State",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Persist Branch State": {
+            "main": [
+                [
+                    {
+                        "node": "Build No Change Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build No Change Payload": {
+            "main": [
+                [
+                    {
+                        "node": "Teams Webhook No Change",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    }
+}

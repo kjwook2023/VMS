@@ -1,464 +1,446 @@
 {
-    "name":  "License-Approval-Alert",
-    "nodes":  [
-                  {
-                      "parameters":  {
-                                         "rule":  {
-                                                      "interval":  [
-                                                                       {
-                                                                           "field":  "cronExpression",
-                                                                           "expression":  "0 50 8 * * 1-5"
-                                                                       },
-                                                                       {
-                                                                           "field":  "cronExpression",
-                                                                           "expression":  "0 40 11 * * 1-5"
-                                                                       },
-                                                                       {
-                                                                           "field":  "cronExpression",
-                                                                           "expression":  "0 40 13 * * 1-5"
-                                                                       },
-                                                                       {
-                                                                           "field":  "cronExpression",
-                                                                           "expression":  "0 20 16 * * 1-5"
-                                                                       }
-                                                                   ]
-                                                  }
-                                     },
-                      "type":  "n8n-nodes-base.scheduleTrigger",
-                      "typeVersion":  1.3,
-                      "position":  [
-                                       -1160,
-                                       0
-                                   ],
-                      "id":  "5f54525f-b5de-43dd-885d-7fbd1ce508ae",
-                      "name":  "Alert Schedule",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "return [{ json: { runMode: \u0027alert\u0027 } }];"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       -920,
-                                       0
-                                   ],
-                      "id":  "b6f33f34-7af7-4b82-a62d-741a4e76db58",
-                      "name":  "Set Alert Mode",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const now = new Date();\nconst pad = (value) =\u003e String(value).padStart(2, \"0\");\nconst weekdayNames = [\"\\uC77C\\uC694\\uC77C\", \"\\uC6D4\\uC694\\uC77C\", \"\\uD654\\uC694\\uC77C\", \"\\uC218\\uC694\\uC77C\", \"\\uBAA9\\uC694\\uC77C\", \"\\uAE08\\uC694\\uC77C\", \"\\uD1A0\\uC694\\uC77C\"];\nconst year = String(now.getFullYear());\nconst month = pad(now.getMonth() + 1);\nconst day = pad(now.getDate());\nconst weekdayIndex = now.getDay();\nconst isWeekend = weekdayIndex === 0 || weekdayIndex === 6;\nreturn [{\n  json: {\n    todayDate: `${year}-${month}-${day}`,\n    todayInt: `${year}${month}${day}`,\n    todayMMDD: `${month}${day}`,\n    WeekdayName: weekdayNames[weekdayIndex],\n    IsWeekend: isWeekend,\n    DefaultIsHoliday: isWeekend,\n    DefaultHolidayName: isWeekend ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027,\n  }\n}];"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       -680,
-                                       220
-                                   ],
-                      "id":  "24e44449-6709-470a-a621-c570525c0db8",
-                      "name":  "Weekday Baseline",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "operation":  "executeQuery",
-                                         "query":  "=DECLARE @d DATE = CAST(\u0027{{ $(\u0027Weekday Baseline\u0027).item.json.todayDate }}\u0027 AS date);\nSELECT\n    CONVERT(VARCHAR(8), @d, 112) AS check_date,\n    CAST(CASE WHEN EXISTS (\n        SELECT 1\n        FROM TsMgmt.dbo.HolidayCalendarKR\n        WHERE HolidayDate = @d\n    ) THEN 1 ELSE 0 END AS bit) AS found_in_db,\n    ISNULL((SELECT TOP 1 HolidayName FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS holiday_name,\n    ISNULL((SELECT TOP 1 SourceType FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), \u0027\u0027) AS source_type,\n    ISNULL((SELECT TOP 1 SourceYear FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), 0) AS source_year;"
-                                     },
-                      "type":  "n8n-nodes-base.microsoftSql",
-                      "typeVersion":  1.1,
-                      "position":  [
-                                       -440,
-                                       220
-                                   ],
-                      "id":  "7f633c02-2932-40e4-b1ca-f54928ae97cf",
-                      "name":  "Holiday DB Fallback",
-                      "alwaysOutputData":  true,
-                      "onError":  "continueRegularOutput",
-                      "credentials":  {
-                                          "microsoftSql":  {
-                                                               "id":  "2dZb5OQPbTyO3052",
-                                                               "name":  "TsMgmt(DevTest_SQL2022_26)"
-                                                           }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const baseline = $(\u0027Weekday Baseline\u0027).first()?.json ?? {};\nconst dbPayload = $(\u0027Holiday DB Fallback\u0027).first()?.json ?? {};\nconst dbFound = !dbPayload.error \u0026\u0026 [true, 1, \u00271\u0027, \u0027true\u0027].includes(dbPayload.found_in_db);\nlet isHoliday = !!baseline.DefaultIsHoliday;\nlet holidayName = baseline.DefaultHolidayName || (isHoliday ? \u0027\\uC8FC\\uB9D0\u0027 : \u0027\\uD3C9\\uC77C\u0027);\nlet holidayLookupSource = isHoliday ? \u0027default-weekend\u0027 : \u0027default-weekday\u0027;\nif (dbFound) {\n  isHoliday = true;\n  holidayName = String(dbPayload.holiday_name || \u0027\\uACF5\\uD734\\uC77C\u0027);\n  holidayLookupSource = dbPayload.source_type ? `db:${dbPayload.source_type}` : \u0027db\u0027;\n}\nreturn [{\n  json: {\n    today_date: baseline.todayDate || \"\",\n    is_holiday: isHoliday,\n    holiday_name: holidayName,\n    holiday_lookup_source: holidayLookupSource,\n    is_weekend: !!baseline.IsWeekend,\n    db_error: dbPayload.error || \u0027\u0027,\n  }\n}];"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       -200,
-                                       220
-                                   ],
-                      "id":  "6f32c893-403a-413c-91ea-f4b09d32ab48",
-                      "name":  "Determine Holiday",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "url":  "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/childFolders?$top=200\u0026$select=id,displayName,parentFolderId,childFolderCount,totalItemCount,unreadItemCount",
-                                         "authentication":  "predefinedCredentialType",
-                                         "nodeCredentialType":  "microsoftOutlookOAuth2Api",
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.httpRequest",
-                      "typeVersion":  4.3,
-                      "position":  [
-                                       -680,
-                                       -120
-                                   ],
-                      "id":  "47814dff-b354-41ce-a3db-c5985f71effb",
-                      "name":  "Inbox Child Folders",
-                      "alwaysOutputData":  true,
-                      "onError":  "continueRegularOutput",
-                      "credentials":  {
-                                          "microsoftOutlookOAuth2Api":  {
-                                                                            "id":  "QfudWXK5AulrLxFd",
-                                                                            "name":  "support"
-                                                                        }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const raw = $(\u0027Inbox Child Folders\u0027).first()?.json ?? {};\nconst folders = Array.isArray(raw.value) ? raw.value : [];\nconst targetName = \u002701. \\uB77C\\uC774\\uC120\\uC2A4 \\uC694\\uCCAD\u0027;\nconst normalize = (value) =\u003e String(value ?? \u0027\u0027).normalize(\u0027NFC\u0027).replace(/\\\\s+/g, \u0027\u0027).toLowerCase();\nconst target = folders.find((folder) =\u003e normalize(folder.displayName) === normalize(targetName));\nreturn [{ json: {\n  folderFound: Boolean(target),\n  folderId: target?.id || \u0027\u0027,\n  folderName: target?.displayName || \u0027\u0027,\n  folderError: raw.error?.message || raw.error?.description || raw.error || \"\",\n} }];"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       -440,
-                                       -120
-                                   ],
-                      "id":  "8e6cecfc-11d3-4991-940c-2db4a3d60eca",
-                      "name":  "Resolve License Folder",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "url":  "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=1000\u0026$orderby=receivedDateTime desc\u0026$select=id,internetMessageId,subject,isRead,flag,receivedDateTime,from,webLink,bodyPreview,body",
-                                         "authentication":  "predefinedCredentialType",
-                                         "nodeCredentialType":  "microsoftOutlookOAuth2Api",
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.httpRequest",
-                      "typeVersion":  4.3,
-                      "position":  [
-                                       -680,
-                                       60
-                                   ],
-                      "id":  "61e96ef4-f68c-4f2e-b4fd-4b6ddfb48ca8",
-                      "name":  "Inbox Messages",
-                      "alwaysOutputData":  true,
-                      "onError":  "continueRegularOutput",
-                      "credentials":  {
-                                          "microsoftOutlookOAuth2Api":  {
-                                                                            "id":  "QfudWXK5AulrLxFd",
-                                                                            "name":  "support"
-                                                                        }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "url":  "={{ $json.folderId ? \u0027https://graph.microsoft.com/v1.0/me/mailFolders/\u0027 + encodeURIComponent($json.folderId) + \u0027/messages?$top=1000\u0026$orderby=receivedDateTime desc\u0026$select=id,internetMessageId,subject,isRead,flag,receivedDateTime,from,webLink,bodyPreview,body\u0027 : \u0027https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=1\u0026$select=id\u0027 }}",
-                                         "authentication":  "predefinedCredentialType",
-                                         "nodeCredentialType":  "microsoftOutlookOAuth2Api",
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.httpRequest",
-                      "typeVersion":  4.3,
-                      "position":  [
-                                       -200,
-                                       -120
-                                   ],
-                      "id":  "efd3f4f6-e42c-458f-9c95-e37a0ac1fd46",
-                      "name":  "License Folder Messages",
-                      "alwaysOutputData":  true,
-                      "onError":  "continueRegularOutput",
-                      "credentials":  {
-                                          "microsoftOutlookOAuth2Api":  {
-                                                                            "id":  "QfudWXK5AulrLxFd",
-                                                                            "name":  "support"
-                                                                        }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "resource":  "databasePage",
-                                         "operation":  "getAll",
-                                         "databaseId":  {
-                                                            "__rl":  true,
-                                                            "value":  "205cb995-8309-80e4-ac2a-c8589a1783eb",
-                                                            "mode":  "list",
-                                                            "cachedResultName":  "TS Calendar DB",
-                                                            "cachedResultUrl":  "https://www.notion.so/205cb995830980e4ac2ac8589a1783eb"
-                                                        },
-                                         "options":  {
-                                                         "sort":  {
-                                                                      "sortValue":  [
-                                                                                        {
-                                                                                            "key":  "Date|date",
-                                                                                            "direction":  "descending"
-                                                                                        }
-                                                                                    ]
-                                                                  }
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.notion",
-                      "typeVersion":  2.2,
-                      "position":  [
-                                       -200,
-                                       60
-                                   ],
-                      "id":  "d6589c10-bf2c-4d46-99da-c1ee7570e770",
-                      "name":  "Vacation Calendar",
-                      "onError":  "continueRegularOutput",
-                      "credentials":  {
-                                          "notionApi":  {
-                                                            "id":  "LrLyYGhPvHMbPfZm",
-                                                            "name":  "tsupport API"
-                                                        }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const holiday = $(\u0027Determine Holiday\u0027).first()?.json ?? {};\nconst folderInfo = $(\u0027Resolve License Folder\u0027).first()?.json ?? {};\nconst inboxPayload = $(\u0027Inbox Messages\u0027).first()?.json ?? {};\nconst folderPayload = $(\u0027License Folder Messages\u0027).first()?.json ?? {};\nconst vacationItems = $(\u0027Vacation Calendar\u0027).all();\n\nconst K = {\n  approval: \u0027\\uC2B9\\uC778\\uD544\\uC694\u0027,\n  folderName: \u002701. \\uB77C\\uC774\\uC120\\uC2A4 \\uC694\\uCCAD\u0027,\n  license1: \u0027\\uB77C\\uC774\\uC120\\uC2A4\u0027,\n  license2: \u0027license\u0027,\n  license3: \u0027\\uB77C\\uC774\\uC13C\\uC2A4\u0027,\n  vacation1: \u0027\\uD734\\uAC00\u0027,\n  vacation2: \u0027\\uC5F0\\uCC28\u0027,\n  vacation3: \u0027\\uBC18\\uCC28\u0027,\n  vacation4: \u0027\\uC624\\uC804\\uBC18\\uCC28\u0027,\n  vacation5: \u0027\\uC624\\uD6C4\\uBC18\\uCC28\u0027,\n  vacation6: \u0027\\uC548\\uC2DD\\uC6D4\u0027,\n  vacation7: \u0027\\uACF5\\uAC00\u0027,\n  vacation8: \u0027\\uACF5\\uD734\\uC77C\u0027,\n  vacation9: \u0027\\uD734\\uC77C\u0027,\n  applicantTag: \u0027\\uC2E0\\uCCAD\\uC790:\u0027,\n  componentTag: \u0027\\uBC1C\\uAE09 \\uBC1B\\uC744 Component:\u0027,\n  machineTag: \u0027\\uB77C\\uC774\\uC120\\uC2A4 \\uC778\\uC99D \\uB418\\uB294 PC\\uC758 MAC \\uC8FC\\uC18C \\uB610\\uB294 \\uCEF4\\uD4E8\\uD130 \\uC774\\uB984:\u0027,\n  productTag: \u0027\\uBC1C\\uAE09 \\uBC1B\\uC744 \\uC81C\\uD488:\u0027,\n  titleAlert: \u0027\\uD655\\uC778\\uC774 \\uD544\\uC694\\uD55C \\uB77C\\uC774\\uC120\\uC2A4 \\uC694\\uCCAD \\uBA54\\uC77C\\uC774 \\uC788\\uC2B5\\uB2C8\\uB2E4.\u0027,\n  factRecipients: \u0027\\uC54C\\uB9BC \\uB300\\uC0C1\u0027,\n  factVacation: \u0027\\uD734\\uAC00\\uC790\u0027,\n  factRequestCount: \u0027\\uB77C\\uC774\\uC120\\uC2A4 \\uC694\\uCCAD\u0027,\n  factApplicant: \u0027\\uBCF4\\uB0B8\\uC0AC\\uB78C\u0027,\n  factComponent: \u0027\\uBC1C\\uD589\\uC81C\\uD488\u0027,\n  factQuantity: \u0027\\uBC1C\\uD589\\uC218\\uB7C9\u0027,\n  factReceived: \u0027\\uC218\\uC2E0\\uC2DC\\uAC01\u0027,\n  linkText: \u0027\\uB77C\\uC774\\uC120\\uC2A4 \\uAD00\\uB9AC \\uD398\\uC774\\uC9C0\\uB85C \\uC774\\uB3D9\u0027,\n  none: \u0027\\uC5C6\\uC74C\u0027,\n  unknown: \u0027\\uD655\\uC778 \\uBD88\\uAC00\u0027,\n};\n\nconst people = [\n  { name: \u0027\\uAE40\\uC9C4\\uC6B1\u0027, email: \u0027jwkim@vms-solutions.com\u0027 },\n  { name: \u0027\\uAE40\\uBBFC\\uC601\u0027, email: \u0027mykim@vms-solutions.com\u0027 },\n  { name: \u0027\\uC870\\uD604\\uC7AC\u0027, email: \u0027jyi30@vms-solutions.com\u0027 },\n];\n\nconst recentWindowMs = 7 * 24 * 60 * 60 * 1000;\nconst fallbackManageUrl = \"http://192.168.1.17/view/8B521E26-8B31-0EA5-0AC3-3B40CE4BDBAB/21616A03-5394-067D-BAFD-1F00637BFF9E/lms\";\n\nfunction normalize(value) { return String(value ?? \u0027\u0027).normalize(\u0027NFC\u0027).replace(/\\\\s+/g, \u0027\u0027).toLowerCase(); }\nfunction contains(value, keyword) { return normalize(value).includes(normalize(keyword)); }\nfunction arr(value) { return Array.isArray(value) ? value : []; }\nfunction distinct(values) { return [...new Set(values.filter(Boolean))]; }\nfunction isCompleted(flagStatus) { return flagStatus === \u0027complete\u0027 || flagStatus === \u0027completed\u0027; }\nfunction recent(row) { const ts = Date.parse(row?.receivedDateTime || \u0027\u0027); return Number.isFinite(ts) \u0026\u0026 ts \u003e= (Date.now() - recentWindowMs); }\nfunction alertable(row) { const status = row?.flag?.flagStatus ?? \u0027\u0027; return contains(row?.subject, K.approval) \u0026\u0026 (row?.isRead === false || (row?.isRead === true \u0026\u0026 !isCompleted(status))); }\nfunction decode(html) {\n  return String(html ?? \u0027\u0027)\n    .replace(/\u0026nbsp;/gi, \u0027 \u0027)\n    .replace(/\u0026amp;/gi, \u0027\u0026\u0027)\n    .replace(/\u0026lt;/gi, \u0027\u003c\u0027)\n    .replace(/\u0026gt;/gi, \u0027\u003e\u0027)\n    .replace(/\u0026quot;/gi, \u0027\"\u0027)\n    .replace(/\u0026#39;/g, \"\u0027\")\n    .replace(/\u0026#(\\\\d+);/g, (_, code) =\u003e String.fromCodePoint(Number(code)))\n    .replace(/\u0026#x([0-9a-f]+);/gi, (_, code) =\u003e String.fromCodePoint(parseInt(code, 16)));\n}\nfunction htmlToText(html) {\n  return decode(String(html ?? \u0027\u0027)\n    .replace(/\u003cbr[^\u003e]*\u003e/gi, \u0027\\n\u0027)\n    .replace(/\u003c\\/p\u003e/gi, \u0027\\n\u0027)\n    .replace(/\u003c\\/div\u003e/gi, \u0027\\n\u0027)\n    .replace(/\u003c[^\u003e]+\u003e/g, \u0027 \u0027))\n    .replace(/\\\\r/g, \u0027\u0027)\n    .replace(/\\n{3,}/g, \u0027\\n\\n\u0027)\n    .trim();\n}\nfunction getField(line, label) { const match = String(line ?? \u0027\u0027).match(new RegExp(label + \u0027\\\\s*:\\\\s*(.+)$\u0027, \u0027i\u0027)); return match ? match[1].trim() : \u0027\u0027; }\nfunction parseEntries(html) {\n  const blocks = htmlToText(html).split(/={5,}/).map((block) =\u003e block.trim()).filter(Boolean);\n  const entries = [];\n  for (const block of blocks) {\n    const lines = block.split(\u0027\\n\u0027).map((line) =\u003e line.trim()).filter(Boolean);\n    const applicantLine = lines.find((line) =\u003e line.includes(K.applicantTag)) || \u0027\u0027;\n    const componentLine = lines.find((line) =\u003e line.includes(K.componentTag)) || \u0027\u0027;\n    const machineLine = lines.find((line) =\u003e line.includes(K.machineTag)) || \u0027\u0027;\n    const productLine = lines.find((line) =\u003e line.includes(K.productTag)) || \u0027\u0027;\n    const applicantMatch = applicantLine.match(/\\uC2E0\\uCCAD\\uC790:\\s*([^\\)\\]\\s]+)/);\n    const applicant = applicantMatch ? applicantMatch[1].trim() : \u0027\u0027;\n    const component = getField(componentLine, K.componentTag.replace(\u0027:\u0027, \u0027\u0027));\n    const machine = getField(machineLine, K.machineTag.replace(\u0027:\u0027, \u0027\u0027));\n    const product = getField(productLine, K.productTag.replace(\u0027:\u0027, \u0027\u0027));\n    if (applicant || component || machine || product) entries.push({ applicant, component, machine, product });\n  }\n  return entries;\n}\nfunction extractManageUrl(html, webLink) {\n  const match = String(html ?? \u0027\u0027).match(/href=\"(http:\\/\\/192\\.168\\.1\\.17[^\"]+)\"/i);\n  return match ? match[1] : (fallbackManageUrl || webLink || \u0027\u0027);\n}\nfunction toLocalString(isoString) {\n  if (!isoString) return \u0027\u0027;\n  const date = new Date(isoString);\n  if (Number.isNaN(date.getTime())) return String(isoString ?? \u0027\u0027);\n  const pad = (value) =\u003e String(value).padStart(2, \"0\");\n  return date.getFullYear() + \u0027-\u0027 + pad(date.getMonth() + 1) + \u0027-\u0027 + pad(date.getDate()) + \u0027 \u0027 + pad(date.getHours()) + \u0027:\u0027 + pad(date.getMinutes()) + \u0027:\u0027 + pad(date.getSeconds()) + \u0027 KST\u0027;\n}\nfunction mapCandidate(row) {\n  const entries = parseEntries(row.body?.content || \u0027\u0027);\n  const applicants = distinct(entries.map((entry) =\u003e entry.applicant));\n  const components = distinct(entries.map((entry) =\u003e entry.component));\n  const machines = distinct(entries.map((entry) =\u003e entry.machine));\n  const component = components[0] || \u0027\u0027;\n  const groupedMachines = component ? distinct(entries.filter((entry) =\u003e entry.component === component).map((entry) =\u003e entry.machine)) : machines;\n  return {\n    id: row.internetMessageId || row.id,\n    subject: row.subject || \u0027(no subject)\u0027,\n    applicantText: applicants.join(\u0027, \u0027) || row.from?.emailAddress?.name || row.from?.emailAddress?.address || K.unknown,\n    productText: (component || components.join(\u0027, \u0027) || K.unknown) + (entries[0]?.product ? \u0027 (\u0027 + entries[0].product + \u0027)\u0027 : \u0027\u0027),\n    quantityText: String(groupedMachines.length || machines.length || 1),\n    receivedDateTime: row.receivedDateTime || \u0027\u0027,\n    receivedText: toLocalString(row.receivedDateTime),\n    manageUrl: extractManageUrl(row.body?.content || \u0027\u0027, row.webLink || \u0027\u0027),\n  };\n}\n\nconst inboxRows = inboxPayload.error ? [] : arr(inboxPayload.value);\nconst folderRows = folderPayload.error ? [] : arr(folderPayload.value);\n\nconst inboxMatches = inboxRows\n  .filter((row) =\u003e recent(row))\n  .filter((row) =\u003e [K.license1, K.license2, K.license3].some((keyword) =\u003e contains((row.subject || \u0027\u0027) + \u0027 \u0027 + (row.body?.content || \u0027\u0027) + \u0027 \u0027 + (row.bodyPreview || \u0027\u0027), keyword)))\n  .filter((row) =\u003e alertable(row))\n  .map((row) =\u003e mapCandidate(row));\n\nconst folderMatches = folderRows\n  .filter((row) =\u003e recent(row))\n  .filter((row) =\u003e alertable(row))\n  .map((row) =\u003e mapCandidate(row));\n\nconst deduped = [];\nconst seen = new Set();\nfor (const item of [...folderMatches, ...inboxMatches]) {\n  const key = item.id || item.subject + \u0027|\u0027 + item.receivedDateTime;\n  if (seen.has(key)) continue;\n  seen.add(key);\n  deduped.push(item);\n}\ndeduped.sort((a, b) =\u003e new Date(b.receivedDateTime || 0) - new Date(a.receivedDateTime || 0));\n\nfunction collectStrings(value, out = [], depth = 0) {\n  if (depth \u003e 10 || value == null) return out;\n  if (typeof value === \u0027string\u0027 || typeof value === \u0027number\u0027 || typeof value === \u0027boolean\u0027) { out.push(String(value)); return out; }\n  if (Array.isArray(value)) { for (const item of value) collectStrings(item, out, depth + 1); return out; }\n  if (typeof value === \u0027object\u0027) { for (const nested of Object.values(value)) collectStrings(nested, out, depth + 1); }\n  return out;\n}\nfunction ymds(text) { return String(text ?? \u0027\u0027).match(/\\d{4}-\\d{2}-\\d{2}/g) || []; }\nfunction ymd(text) { const match = String(text ?? \u0027\u0027).match(/\\d{4}-\\d{2}-\\d{2}/); return match ? match[0] : \u0027\u0027; }\nfunction ranges(item) {\n  const found = [];\n  const uniq = new Set();\n  function push(label, start, end) {\n    const s = ymd(start);\n    const e = ymd(end || start);\n    if (!s) return;\n    const key = label + \u0027|\u0027 + s + \u0027|\u0027 + e;\n    if (uniq.has(key)) return;\n    uniq.add(key);\n    found.push({ start: s, end: e || s });\n  }\n  function walk(value, label, depth) {\n    if (depth \u003e 8 || value == null) return;\n    if (typeof value === \u0027string\u0027) { const items = ymds(value); if (items.length === 1) push(label, items[0], items[0]); if (items.length \u003e= 2) push(label, items[0], items[1]); return; }\n    if (typeof value === \u0027number\u0027 || typeof value === \u0027boolean\u0027) return;\n    if (Array.isArray(value)) { value.forEach((item, idx) =\u003e walk(item, label + \"[\" + idx + \"]\", depth + 1)); return; }\n    if (typeof value === \u0027object\u0027) {\n      if (\u0027start\u0027 in value \u0026\u0026 ymd(value.start)) push(label + \u0027.start\u0027, value.start, value.end || value.start);\n      if (\u0027date\u0027 in value \u0026\u0026 value.date \u0026\u0026 typeof value.date === \u0027object\u0027 \u0026\u0026 ymd(value.date.start)) push(label + \u0027.date\u0027, value.date.start, value.date.end || value.date.start);\n      if (\u0027property_date\u0027 in value \u0026\u0026 value.property_date \u0026\u0026 typeof value.property_date === \u0027object\u0027 \u0026\u0026 ymd(value.property_date.start)) push(label + \u0027.property_date\u0027, value.property_date.start, value.property_date.end || value.property_date.start);\n      for (const [key, nested] of Object.entries(value)) walk(nested, label + \".\" + key, depth + 1);\n    }\n  }\n  walk(item?.json ?? item, \u0027root\u0027, 0);\n  return found;\n}\nfunction isVacationText(text) { return [K.vacation1, K.vacation2, K.vacation3, K.vacation4, K.vacation5, K.vacation6, K.vacation7, K.vacation8, K.vacation9, \u0027vacation\u0027, \u0027leave\u0027, \u0027pto\u0027, \u0027dayoff\u0027, \u0027off\u0027].some((keyword) =\u003e contains(text, keyword)); }\nconst today = String(holiday.today_date || $(\u0027Weekday Baseline\u0027).first()?.json?.todayDate || \u0027\u0027);\nconst isHoliday = !!holiday.is_holiday;\nconst vacationLookupFailed = vacationItems.some((item) =\u003e item?.json?.error);\nconst todayVacationItems = vacationLookupFailed ? [] : vacationItems.filter((item) =\u003e {\n  const text = collectStrings(item?.json ?? item).join(\" \");\n  if (!isVacationText(text)) return false;\n  const itemRanges = ranges(item);\n  return itemRanges.length \u003e 0 \u0026\u0026 itemRanges.some((range) =\u003e range.start \u003c= today \u0026\u0026 today \u003c= range.end);\n});\nconst vacationUsers = people.filter((person) =\u003e todayVacationItems.some((item) =\u003e {\n  const text = collectStrings(item?.json ?? item).join(\" \");\n  return contains(text, person.name) || contains(text, person.email);\n}));\nconst vacationSet = new Set(vacationUsers.map((person) =\u003e person.email));\nconst activeUsers = people.filter((person) =\u003e !vacationSet.has(person.email));\nconst teamsEntities = activeUsers.map((person) =\u003e ({ type: \"mention\", text: \"\u003cat\u003e\" + person.name + \"\u003c/at\u003e\", mentioned: { id: person.email, name: person.name } }));\nconst teamsText = activeUsers.map((person) =\u003e \"\u003cat\u003e\" + person.name + \"\u003c/at\u003e\").join(\", \");\n\nconst warningParts = [\n  holiday.db_error ? \"\\uACF5\\uD734\\uC77C DB \\uC870\\uD68C \\uC2E4\\uD328: \" + String(holiday.db_error) : \"\",\n  folderInfo.folderError || (!folderInfo.folderFound ? \"01. \\uB77C\\uC774\\uC120\\uC2A4 \\uC694\\uCCAD \\uD3F4\\uB354\\uB97C \\uCC3E\\uC9C0 \\uBABB\\uD588\\uC2B5\\uB2C8\\uB2E4.\" : \"\"),\n  inboxPayload.error?.message || inboxPayload.error?.description || inboxPayload.error || \"\",\n  folderPayload.error?.message || folderPayload.error?.description || folderPayload.error || \"\",\n  vacationLookupFailed ? \"\\uD734\\uAC00 \\uC815\\uBCF4 \\uC870\\uD68C \\uC2E4\\uD328 \\uC2DC \\uAE30\\uBCF8\\uAC12(\\uC804\\uC6D0 \\uADFC\\uBB34)\\uC73C\\uB85C \\uCC98\\uB9AC\\uD588\\uC2B5\\uB2C8\\uB2E4.\" : \"\",\n].filter(Boolean);\n\nconst alertCardBody = [];\nif (!isHoliday \u0026\u0026 deduped.length \u003e 0) {\n  alertCardBody.push({ type: \"TextBlock\", text: teamsText ? \"\\uD83D\\uDCEC \" + teamsText + \" \\uB2D8, \" + K.titleAlert : \"\\uD83D\\uDCEC \" + K.titleAlert, weight: \"Bolder\", size: \"Medium\", wrap: true });\n  alertCardBody.push({ type: \"FactSet\", facts: [\n    { title: K.factRecipients, value: activeUsers.length \u003e 0 ? activeUsers.map((person) =\u003e person.name).join(\", \") : K.none },\n    { title: K.factVacation, value: vacationUsers.length \u003e 0 ? vacationUsers.map((person) =\u003e person.name).join(\", \") : K.none },\n    { title: K.factRequestCount, value: String(deduped.length) + \"\\uAC74\" },\n  ] });\n  alertCardBody.push({ type: \"TextBlock\", text: \"-------------------------------------------------\", wrap: true, spacing: \"Medium\", isSubtle: true });\n  deduped.forEach((item, index) =\u003e {\n    alertCardBody.push({ type: \"TextBlock\", text: item.subject, weight: \"Bolder\", wrap: true, spacing: index === 0 ? \"Medium\" : \"Large\" });\n    alertCardBody.push({ type: \"FactSet\", facts: [\n      { title: K.factApplicant, value: item.applicantText },\n      { title: K.factComponent, value: item.productText },\n      { title: K.factQuantity, value: item.quantityText },\n      { title: K.factReceived, value: item.receivedText || item.receivedDateTime || K.unknown },\n    ] });\n    alertCardBody.push({ type: \"TextBlock\", text: \"-------------------------------------------------\", wrap: true, spacing: \"Medium\", isSubtle: true });\n  });\n  alertCardBody.push({ type: \"TextBlock\", text: \"[\" + K.linkText + \"](\" + ((deduped[0]?.manageUrl) || fallbackManageUrl) + \")\", wrap: true, spacing: \"Medium\" });\n  if (warningParts.length \u003e 0) alertCardBody.push({ type: \"TextBlock\", text: warningParts.join(\" / \"), wrap: true, spacing: \"Medium\", color: \"Attention\" });\n}\n\nreturn [{ json: {\n  alertCount: isHoliday ? 0 : deduped.length,\n  teamsEntities,\n  alertCardBody,\n  debug: {\n    isHoliday,\n    holidayName: holiday.holiday_name || \"\",\n    holidayLookupSource: holiday.holiday_lookup_source || \"\",\n  },\n} }];"
-                                     },
-                      "type":  "n8n-nodes-base.code",
-                      "typeVersion":  2,
-                      "position":  [
-                                       120,
-                                       -20
-                                   ],
-                      "id":  "e267f131-661d-4dbd-8232-0bd476177880",
-                      "name":  "Build Teams Payload",
-                      "alwaysOutputData":  true
-                  },
-                  {
-                      "parameters":  {
-                                         "conditions":  {
-                                                            "options":  {
-                                                                            "caseSensitive":  true,
-                                                                            "leftValue":  "",
-                                                                            "typeValidation":  "strict",
-                                                                            "version":  2
-                                                                        },
-                                                            "conditions":  [
-                                                                               {
-                                                                                   "id":  "8d3b63f7-1b11-4dd6-a520-6d0998d4ec8d",
-                                                                                   "leftValue":  "={{ $json.alertCount \u003e 0 }}",
-                                                                                   "rightValue":  true,
-                                                                                   "operator":  {
-                                                                                                    "type":  "boolean",
-                                                                                                    "operation":  "equals"
-                                                                                                }
-                                                                               }
-                                                                           ],
-                                                            "combinator":  "and"
-                                                        },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.if",
-                      "typeVersion":  2.2,
-                      "position":  [
-                                       360,
-                                       -20
-                                   ],
-                      "id":  "3ff54e92-6cef-4bb7-a1c7-a5281d01eb2b",
-                      "name":  "Should Send Alert"
-                  },
-                  {
-                      "parameters":  {
-                                         "method":  "POST",
-                                         "url":  "https://redacted.invalid/powerautomate/webhook",
-                                         "sendBody":  true,
-                                         "contentType":  "json",
-                                         "specifyBody":  "json",
-                                         "bodyParameters":  {
-                                                                "parameters":  [
-                                                                                   {
-
-                                                                                   }
-                                                                               ]
-                                                            },
-                                         "jsonBody":  "={{ ({ type: \u0027message\u0027, attachments: [{ contentType: \u0027application/vnd.microsoft.card.adaptive\u0027, content: { type: \u0027AdaptiveCard\u0027, body: Array.isArray($json.alertCardBody) ? $json.alertCardBody : [], msteams: { entities: Array.isArray($json.teamsEntities) ? $json.teamsEntities : [] }, \u0027$schema\u0027: \u0027http://adaptivecards.io/schemas/adaptive-card.json\u0027, version: \u00271.4\u0027 } }] }) }}",
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.httpRequest",
-                      "typeVersion":  4.3,
-                      "position":  [
-                                       620,
-                                       -20
-                                   ],
-                      "id":  "780a40fd-a9ea-4819-a64d-a608a22b3db7",
-                      "name":  "Alert Teams Webhook",
-                      "alwaysOutputData":  false
-                  }
-              ],
-    "connections":  {
-                        "Alert Schedule":  {
-                                               "main":  [
-                                                            [
-                                                                {
-                                                                    "node":  "Set Alert Mode",
-                                                                    "type":  "main",
-                                                                    "index":  0
-                                                                }
-                                                            ]
-                                                        ]
-                                           },
-                        "Set Alert Mode":  {
-                                               "main":  [
-                                                            [
-                                                                {
-                                                                    "node":  "Weekday Baseline",
-                                                                    "type":  "main",
-                                                                    "index":  0
-                                                                },
-                                                                {
-                                                                    "node":  "Inbox Child Folders",
-                                                                    "type":  "main",
-                                                                    "index":  0
-                                                                },
-                                                                {
-                                                                    "node":  "Inbox Messages",
-                                                                    "type":  "main",
-                                                                    "index":  0
-                                                                }
-                                                            ]
-                                                        ]
-                                           },
-                        "Weekday Baseline":  {
-                                                 "main":  [
-                                                              [
-                                                                  {
-                                                                      "node":  "Holiday DB Fallback",
-                                                                      "type":  "main",
-                                                                      "index":  0
-                                                                  }
-                                                              ]
-                                                          ]
-                                             },
-                        "Holiday DB Fallback":  {
-                                                    "main":  [
-                                                                 [
-                                                                     {
-                                                                         "node":  "Determine Holiday",
-                                                                         "type":  "main",
-                                                                         "index":  0
-                                                                     }
-                                                                 ]
-                                                             ]
-                                                },
-                        "Inbox Child Folders":  {
-                                                    "main":  [
-                                                                 [
-                                                                     {
-                                                                         "node":  "Resolve License Folder",
-                                                                         "type":  "main",
-                                                                         "index":  0
-                                                                     }
-                                                                 ]
-                                                             ]
-                                                },
-                        "Resolve License Folder":  {
-                                                       "main":  [
-                                                                    [
-                                                                        {
-                                                                            "node":  "License Folder Messages",
-                                                                            "type":  "main",
-                                                                            "index":  0
-                                                                        },
-                                                                        {
-                                                                            "node":  "Vacation Calendar",
-                                                                            "type":  "main",
-                                                                            "index":  0
-                                                                        }
-                                                                    ]
-                                                                ]
-                                                   },
-                        "Inbox Messages":  {
-                                               "main":  [
-                                                            [
-                                                                {
-                                                                    "node":  "Build Teams Payload",
-                                                                    "type":  "main",
-                                                                    "index":  0
-                                                                }
-                                                            ]
-                                                        ]
-                                           },
-                        "License Folder Messages":  {
-                                                        "main":  [
-                                                                     [
-                                                                         {
-                                                                             "node":  "Build Teams Payload",
-                                                                             "type":  "main",
-                                                                             "index":  1
-                                                                         }
-                                                                     ]
-                                                                 ]
-                                                    },
-                        "Vacation Calendar":  {
-                                                  "main":  [
-                                                               [
-                                                                   {
-                                                                       "node":  "Build Teams Payload",
-                                                                       "type":  "main",
-                                                                       "index":  2
-                                                                   }
-                                                               ]
-                                                           ]
-                                              },
-                        "Determine Holiday":  {
-                                                  "main":  [
-                                                               [
-                                                                   {
-                                                                       "node":  "Build Teams Payload",
-                                                                       "type":  "main",
-                                                                       "index":  3
-                                                                   }
-                                                               ]
-                                                           ]
-                                              },
-                        "Build Teams Payload":  {
-                                                    "main":  [
-                                                                 [
-                                                                     {
-                                                                         "node":  "Should Send Alert",
-                                                                         "type":  "main",
-                                                                         "index":  0
-                                                                     }
-                                                                 ]
-                                                             ]
-                                                },
-                        "Should Send Alert":  {
-                                                  "main":  [
-                                                               [
-                                                                   {
-                                                                       "node":  "Alert Teams Webhook",
-                                                                       "type":  "main",
-                                                                       "index":  0
-                                                                   }
-                                                               ]
-                                                           ]
-                                              }
-                    },
-    "settings":  {
-                     "executionOrder":  "v1",
-                     "callerPolicy":  "workflowsFromSameOwner",
-                     "availableInMCP":  false
-                 }
+  "name": "License-Approval-Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 7 * * 1-5"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 */20 8-16 * * 1-5"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 0 18 * * 1-5"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1160,
+        0
+      ],
+      "id": "5f54525f-b5de-43dd-885d-7fbd1ce508ae",
+      "name": "Alert Schedule",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { runMode: 'alert' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -920,
+        0
+      ],
+      "id": "b6f33f34-7af7-4b82-a62d-741a4e76db58",
+      "name": "Set Alert Mode",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst pad = (value) => String(value).padStart(2, \"0\");\nconst weekdayNames = [\"\\uC77C\\uC694\\uC77C\", \"\\uC6D4\\uC694\\uC77C\", \"\\uD654\\uC694\\uC77C\", \"\\uC218\\uC694\\uC77C\", \"\\uBAA9\\uC694\\uC77C\", \"\\uAE08\\uC694\\uC77C\", \"\\uD1A0\\uC694\\uC77C\"];\nconst year = String(now.getFullYear());\nconst month = pad(now.getMonth() + 1);\nconst day = pad(now.getDate());\nconst weekdayIndex = now.getDay();\nconst isWeekend = weekdayIndex === 0 || weekdayIndex === 6;\nreturn [{\n  json: {\n    todayDate: `${year}-${month}-${day}`,\n    todayInt: `${year}${month}${day}`,\n    todayMMDD: `${month}${day}`,\n    WeekdayName: weekdayNames[weekdayIndex],\n    IsWeekend: isWeekend,\n    DefaultIsHoliday: isWeekend,\n    DefaultHolidayName: isWeekend ? '\\uC8FC\\uB9D0' : '\\uD3C9\\uC77C',\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -680,
+        220
+      ],
+      "id": "24e44449-6709-470a-a621-c570525c0db8",
+      "name": "Weekday Baseline",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=DECLARE @d DATE = CAST('{{ $('Weekday Baseline').item.json.todayDate }}' AS date);\nSELECT\n    CONVERT(VARCHAR(8), @d, 112) AS check_date,\n    CAST(CASE WHEN EXISTS (\n        SELECT 1\n        FROM TsMgmt.dbo.HolidayCalendarKR\n        WHERE HolidayDate = @d\n    ) THEN 1 ELSE 0 END AS bit) AS found_in_db,\n    ISNULL((SELECT TOP 1 HolidayName FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), '') AS holiday_name,\n    ISNULL((SELECT TOP 1 SourceType FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), '') AS source_type,\n    ISNULL((SELECT TOP 1 SourceYear FROM TsMgmt.dbo.HolidayCalendarKR WHERE HolidayDate = @d), 0) AS source_year;"
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        -440,
+        220
+      ],
+      "id": "7f633c02-2932-40e4-b1ca-f54928ae97cf",
+      "name": "Holiday DB Fallback",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "microsoftSql": {
+          "id": "2dZb5OQPbTyO3052",
+          "name": "TsMgmt(DevTest_SQL2022_26)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const baseline = $('Weekday Baseline').first()?.json ?? {};\nconst dbPayload = $('Holiday DB Fallback').first()?.json ?? {};\nconst dbFound = !dbPayload.error && [true, 1, '1', 'true'].includes(dbPayload.found_in_db);\nlet isHoliday = !!baseline.DefaultIsHoliday;\nlet holidayName = baseline.DefaultHolidayName || (isHoliday ? '\\uC8FC\\uB9D0' : '\\uD3C9\\uC77C');\nlet holidayLookupSource = isHoliday ? 'default-weekend' : 'default-weekday';\nif (dbFound) {\n  isHoliday = true;\n  holidayName = String(dbPayload.holiday_name || '\\uACF5\\uD734\\uC77C');\n  holidayLookupSource = dbPayload.source_type ? `db:${dbPayload.source_type}` : 'db';\n}\nreturn [{\n  json: {\n    today_date: baseline.todayDate || \"\",\n    is_holiday: isHoliday,\n    holiday_name: holidayName,\n    holiday_lookup_source: holidayLookupSource,\n    is_weekend: !!baseline.IsWeekend,\n    db_error: dbPayload.error || '',\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        220
+      ],
+      "id": "6f32c893-403a-413c-91ea-f4b09d32ab48",
+      "name": "Determine Holiday",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/childFolders?$top=200&$select=id,displayName,parentFolderId,childFolderCount,totalItemCount,unreadItemCount",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOutlookOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -680,
+        -120
+      ],
+      "id": "47814dff-b354-41ce-a3db-c5985f71effb",
+      "name": "Inbox Child Folders",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "QfudWXK5AulrLxFd",
+          "name": "support"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $('Inbox Child Folders').first()?.json ?? {};\nconst folders = Array.isArray(raw.value) ? raw.value : [];\nconst targetName = '01. \\uB77C\\uC774\\uC120\\uC2A4 \\uC694\\uCCAD';\nconst normalize = (value) => String(value ?? '').normalize('NFC').replace(/\\\\s+/g, '').toLowerCase();\nconst target = folders.find((folder) => normalize(folder.displayName) === normalize(targetName));\nreturn [{ json: {\n  folderFound: Boolean(target),\n  folderId: target?.id || '',\n  folderName: target?.displayName || '',\n  folderError: raw.error?.message || raw.error?.description || raw.error || \"\",\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -440,
+        -120
+      ],
+      "id": "8e6cecfc-11d3-4991-940c-2db4a3d60eca",
+      "name": "Resolve License Folder",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=1000&$orderby=receivedDateTime desc&$select=id,internetMessageId,subject,isRead,flag,receivedDateTime,from,webLink,bodyPreview,body",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOutlookOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -680,
+        60
+      ],
+      "id": "61e96ef4-f68c-4f2e-b4fd-4b6ddfb48ca8",
+      "name": "Inbox Messages",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "QfudWXK5AulrLxFd",
+          "name": "support"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.folderId ? 'https://graph.microsoft.com/v1.0/me/mailFolders/' + encodeURIComponent($json.folderId) + '/messages?$top=1000&$orderby=receivedDateTime desc&$select=id,internetMessageId,subject,isRead,flag,receivedDateTime,from,webLink,bodyPreview,body' : 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=1&$select=id' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOutlookOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -200,
+        -120
+      ],
+      "id": "efd3f4f6-e42c-458f-9c95-e37a0ac1fd46",
+      "name": "License Folder Messages",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "QfudWXK5AulrLxFd",
+          "name": "support"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "205cb995-8309-80e4-ac2a-c8589a1783eb",
+          "mode": "list",
+          "cachedResultName": "TS Calendar DB",
+          "cachedResultUrl": "https://www.notion.so/205cb995830980e4ac2ac8589a1783eb"
+        },
+        "options": {
+          "sort": {
+            "sortValue": [
+              {
+                "key": "Date|date",
+                "direction": "descending"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        -200,
+        60
+      ],
+      "id": "d6589c10-bf2c-4d46-99da-c1ee7570e770",
+      "name": "Vacation Calendar",
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "notionApi": {
+          "id": "LrLyYGhPvHMbPfZm",
+          "name": "tsupport API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const holiday = $('Determine Holiday').first()?.json ?? {};\nconst folderInfo = $('Resolve License Folder').first()?.json ?? {};\nconst inboxPayload = $('Inbox Messages').first()?.json ?? {};\nconst folderPayload = $('License Folder Messages').first()?.json ?? {};\nconst vacationItems = $('Vacation Calendar').all();\n\nconst K = {\n  approval: '\\uC2B9\\uC778\\uD544\\uC694',\n  folderName: '01. \\uB77C\\uC774\\uC120\\uC2A4 \\uC694\\uCCAD',\n  license1: '\\uB77C\\uC774\\uC120\\uC2A4',\n  license2: 'license',\n  license3: '\\uB77C\\uC774\\uC13C\\uC2A4',\n  vacation1: '\\uD734\\uAC00',\n  vacation2: '\\uC5F0\\uCC28',\n  vacation3: '\\uBC18\\uCC28',\n  vacation4: '\\uC624\\uC804\\uBC18\\uCC28',\n  vacation5: '\\uC624\\uD6C4\\uBC18\\uCC28',\n  vacation6: '\\uC548\\uC2DD\\uC6D4',\n  vacation7: '\\uACF5\\uAC00',\n  vacation8: '\\uACF5\\uD734\\uC77C',\n  vacation9: '\\uD734\\uC77C',\n  applicantTag: '\\uC2E0\\uCCAD\\uC790:',\n  componentTag: '\\uBC1C\\uAE09 \\uBC1B\\uC744 Component:',\n  machineTag: '\\uB77C\\uC774\\uC120\\uC2A4 \\uC778\\uC99D \\uB418\\uB294 PC\\uC758 MAC \\uC8FC\\uC18C \\uB610\\uB294 \\uCEF4\\uD4E8\\uD130 \\uC774\\uB984:',\n  productTag: '\\uBC1C\\uAE09 \\uBC1B\\uC744 \\uC81C\\uD488:',\n  titleAlert: '\\uD655\\uC778\\uC774 \\uD544\\uC694\\uD55C \\uB77C\\uC774\\uC120\\uC2A4 \\uC694\\uCCAD \\uBA54\\uC77C\\uC774 \\uC788\\uC2B5\\uB2C8\\uB2E4.',\n  factRecipients: '\\uC54C\\uB9BC \\uB300\\uC0C1',\n  factVacation: '\\uD734\\uAC00\\uC790',\n  factRequestCount: '\\uB77C\\uC774\\uC120\\uC2A4 \\uC694\\uCCAD',\n  factApplicant: '\\uBCF4\\uB0B8\\uC0AC\\uB78C',\n  factComponent: '\\uBC1C\\uD589\\uC81C\\uD488',\n  factQuantity: '\\uBC1C\\uD589\\uC218\\uB7C9',\n  factReceived: '\\uC218\\uC2E0\\uC2DC\\uAC01',\n  linkText: '\\uB77C\\uC774\\uC120\\uC2A4 \\uAD00\\uB9AC \\uD398\\uC774\\uC9C0\\uB85C \\uC774\\uB3D9',\n  none: '\\uC5C6\\uC74C',\n  unknown: '\\uD655\\uC778 \\uBD88\\uAC00',\n};\n\nconst people = [\n  { name: '\\uAE40\\uC9C4\\uC6B1', email: 'jwkim@vms-solutions.com' },\n  { name: '\\uAE40\\uBBFC\\uC601', email: 'mykim@vms-solutions.com' },\n  { name: '\\uC870\\uD604\\uC7AC', email: 'jyi30@vms-solutions.com' },\n];\n\nconst recentWindowMs = 7 * 24 * 60 * 60 * 1000;\nconst fallbackManageUrl = \"http://192.168.1.17/view/8B521E26-8B31-0EA5-0AC3-3B40CE4BDBAB/21616A03-5394-067D-BAFD-1F00637BFF9E/lms\";\n\nfunction normalize(value) { return String(value ?? '').normalize('NFC').replace(/\\\\s+/g, '').toLowerCase(); }\nfunction contains(value, keyword) { return normalize(value).includes(normalize(keyword)); }\nfunction arr(value) { return Array.isArray(value) ? value : []; }\nfunction distinct(values) { return [...new Set(values.filter(Boolean))]; }\nfunction isCompleted(flagStatus) { return flagStatus === 'complete' || flagStatus === 'completed'; }\nfunction recent(row) { const ts = Date.parse(row?.receivedDateTime || ''); return Number.isFinite(ts) && ts >= (Date.now() - recentWindowMs); }\nfunction alertable(row) { const status = row?.flag?.flagStatus ?? ''; return contains(row?.subject, K.approval) && (row?.isRead === false || (row?.isRead === true && !isCompleted(status))); }\nfunction decode(html) {\n  return String(html ?? '')\n    .replace(/&nbsp;/gi, ' ')\n    .replace(/&amp;/gi, '&')\n    .replace(/&lt;/gi, '<')\n    .replace(/&gt;/gi, '>')\n    .replace(/&quot;/gi, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&#(\\\\d+);/g, (_, code) => String.fromCodePoint(Number(code)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)));\n}\nfunction htmlToText(html) {\n  return decode(String(html ?? '')\n    .replace(/<br[^>]*>/gi, '\\n')\n    .replace(/<\\/p>/gi, '\\n')\n    .replace(/<\\/div>/gi, '\\n')\n    .replace(/<[^>]+>/g, ' '))\n    .replace(/\\\\r/g, '')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n}\nfunction getField(line, label) { const match = String(line ?? '').match(new RegExp(label + '\\\\s*:\\\\s*(.+)$', 'i')); return match ? match[1].trim() : ''; }\nfunction parseEntries(html) {\n  const blocks = htmlToText(html).split(/={5,}/).map((block) => block.trim()).filter(Boolean);\n  const entries = [];\n  for (const block of blocks) {\n    const lines = block.split('\\n').map((line) => line.trim()).filter(Boolean);\n    const applicantLine = lines.find((line) => line.includes(K.applicantTag)) || '';\n    const componentLine = lines.find((line) => line.includes(K.componentTag)) || '';\n    const machineLine = lines.find((line) => line.includes(K.machineTag)) || '';\n    const productLine = lines.find((line) => line.includes(K.productTag)) || '';\n    const applicantMatch = applicantLine.match(/\\uC2E0\\uCCAD\\uC790:\\s*([^\\)\\]\\s]+)/);\n    const applicant = applicantMatch ? applicantMatch[1].trim() : '';\n    const component = getField(componentLine, K.componentTag.replace(':', ''));\n    const machine = getField(machineLine, K.machineTag.replace(':', ''));\n    const product = getField(productLine, K.productTag.replace(':', ''));\n    if (applicant || component || machine || product) entries.push({ applicant, component, machine, product });\n  }\n  return entries;\n}\nfunction extractManageUrl(html, webLink) {\n  const match = String(html ?? '').match(/href=\"(http:\\/\\/192\\.168\\.1\\.17[^\"]+)\"/i);\n  return match ? match[1] : (fallbackManageUrl || webLink || '');\n}\nfunction toLocalString(isoString) {\n  if (!isoString) return '';\n  const date = new Date(isoString);\n  if (Number.isNaN(date.getTime())) return String(isoString ?? '');\n  const pad = (value) => String(value).padStart(2, \"0\");\n  return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes()) + ':' + pad(date.getSeconds()) + ' KST';\n}\nfunction mapCandidate(row) {\n  const entries = parseEntries(row.body?.content || '');\n  const applicants = distinct(entries.map((entry) => entry.applicant));\n  const components = distinct(entries.map((entry) => entry.component));\n  const machines = distinct(entries.map((entry) => entry.machine));\n  const component = components[0] || '';\n  const groupedMachines = component ? distinct(entries.filter((entry) => entry.component === component).map((entry) => entry.machine)) : machines;\n  return {\n    id: row.internetMessageId || row.id,\n    subject: row.subject || '(no subject)',\n    applicantText: applicants.join(', ') || row.from?.emailAddress?.name || row.from?.emailAddress?.address || K.unknown,\n    productText: (component || components.join(', ') || K.unknown) + (entries[0]?.product ? ' (' + entries[0].product + ')' : ''),\n    quantityText: String(groupedMachines.length || machines.length || 1),\n    receivedDateTime: row.receivedDateTime || '',\n    receivedText: toLocalString(row.receivedDateTime),\n    manageUrl: extractManageUrl(row.body?.content || '', row.webLink || ''),\n  };\n}\n\nconst inboxRows = inboxPayload.error ? [] : arr(inboxPayload.value);\nconst folderRows = folderPayload.error ? [] : arr(folderPayload.value);\n\nconst inboxMatches = inboxRows\n  .filter((row) => recent(row))\n  .filter((row) => [K.license1, K.license2, K.license3].some((keyword) => contains((row.subject || '') + ' ' + (row.body?.content || '') + ' ' + (row.bodyPreview || ''), keyword)))\n  .filter((row) => alertable(row))\n  .map((row) => mapCandidate(row));\n\nconst folderMatches = folderRows\n  .filter((row) => recent(row))\n  .filter((row) => alertable(row))\n  .map((row) => mapCandidate(row));\n\nconst deduped = [];\nconst seen = new Set();\nfor (const item of [...folderMatches, ...inboxMatches]) {\n  const key = item.id || item.subject + '|' + item.receivedDateTime;\n  if (seen.has(key)) continue;\n  seen.add(key);\n  deduped.push(item);\n}\ndeduped.sort((a, b) => new Date(b.receivedDateTime || 0) - new Date(a.receivedDateTime || 0));\n\nfunction collectStrings(value, out = [], depth = 0) {\n  if (depth > 10 || value == null) return out;\n  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') { out.push(String(value)); return out; }\n  if (Array.isArray(value)) { for (const item of value) collectStrings(item, out, depth + 1); return out; }\n  if (typeof value === 'object') { for (const nested of Object.values(value)) collectStrings(nested, out, depth + 1); }\n  return out;\n}\nfunction ymds(text) { return String(text ?? '').match(/\\d{4}-\\d{2}-\\d{2}/g) || []; }\nfunction ymd(text) { const match = String(text ?? '').match(/\\d{4}-\\d{2}-\\d{2}/); return match ? match[0] : ''; }\nfunction ranges(item) {\n  const found = [];\n  const uniq = new Set();\n  function push(label, start, end) {\n    const s = ymd(start);\n    const e = ymd(end || start);\n    if (!s) return;\n    const key = label + '|' + s + '|' + e;\n    if (uniq.has(key)) return;\n    uniq.add(key);\n    found.push({ start: s, end: e || s });\n  }\n  function walk(value, label, depth) {\n    if (depth > 8 || value == null) return;\n    if (typeof value === 'string') { const items = ymds(value); if (items.length === 1) push(label, items[0], items[0]); if (items.length >= 2) push(label, items[0], items[1]); return; }\n    if (typeof value === 'number' || typeof value === 'boolean') return;\n    if (Array.isArray(value)) { value.forEach((item, idx) => walk(item, label + \"[\" + idx + \"]\", depth + 1)); return; }\n    if (typeof value === 'object') {\n      if ('start' in value && ymd(value.start)) push(label + '.start', value.start, value.end || value.start);\n      if ('date' in value && value.date && typeof value.date === 'object' && ymd(value.date.start)) push(label + '.date', value.date.start, value.date.end || value.date.start);\n      if ('property_date' in value && value.property_date && typeof value.property_date === 'object' && ymd(value.property_date.start)) push(label + '.property_date', value.property_date.start, value.property_date.end || value.property_date.start);\n      for (const [key, nested] of Object.entries(value)) walk(nested, label + \".\" + key, depth + 1);\n    }\n  }\n  walk(item?.json ?? item, 'root', 0);\n  return found;\n}\nfunction isVacationText(text) { return [K.vacation1, K.vacation2, K.vacation3, K.vacation4, K.vacation5, K.vacation6, K.vacation7, K.vacation8, K.vacation9, 'vacation', 'leave', 'pto', 'dayoff', 'off'].some((keyword) => contains(text, keyword)); }\nconst today = String(holiday.today_date || $('Weekday Baseline').first()?.json?.todayDate || '');\nconst isHoliday = !!holiday.is_holiday;\nconst vacationLookupFailed = vacationItems.some((item) => item?.json?.error);\nconst todayVacationItems = vacationLookupFailed ? [] : vacationItems.filter((item) => {\n  const text = collectStrings(item?.json ?? item).join(\" \");\n  if (!isVacationText(text)) return false;\n  const itemRanges = ranges(item);\n  return itemRanges.length > 0 && itemRanges.some((range) => range.start <= today && today <= range.end);\n});\nconst vacationUsers = people.filter((person) => todayVacationItems.some((item) => {\n  const text = collectStrings(item?.json ?? item).join(\" \");\n  return contains(text, person.name) || contains(text, person.email);\n}));\nconst vacationSet = new Set(vacationUsers.map((person) => person.email));\nconst activeUsers = people.filter((person) => !vacationSet.has(person.email));\nconst teamsEntities = activeUsers.map((person) => ({ type: \"mention\", text: \"<at>\" + person.name + \"</at>\", mentioned: { id: person.email, name: person.name } }));\nconst teamsText = activeUsers.map((person) => \"<at>\" + person.name + \"</at>\").join(\", \");\n\nconst warningParts = [\n  holiday.db_error ? \"\\uACF5\\uD734\\uC77C DB \\uC870\\uD68C \\uC2E4\\uD328: \" + String(holiday.db_error) : \"\",\n  folderInfo.folderError || (!folderInfo.folderFound ? \"01. \\uB77C\\uC774\\uC120\\uC2A4 \\uC694\\uCCAD \\uD3F4\\uB354\\uB97C \\uCC3E\\uC9C0 \\uBABB\\uD588\\uC2B5\\uB2C8\\uB2E4.\" : \"\"),\n  inboxPayload.error?.message || inboxPayload.error?.description || inboxPayload.error || \"\",\n  folderPayload.error?.message || folderPayload.error?.description || folderPayload.error || \"\",\n  vacationLookupFailed ? \"\\uD734\\uAC00 \\uC815\\uBCF4 \\uC870\\uD68C \\uC2E4\\uD328 \\uC2DC \\uAE30\\uBCF8\\uAC12(\\uC804\\uC6D0 \\uADFC\\uBB34)\\uC73C\\uB85C \\uCC98\\uB9AC\\uD588\\uC2B5\\uB2C8\\uB2E4.\" : \"\",\n].filter(Boolean);\n\nconst alertCardBody = [];\nif (!isHoliday && deduped.length > 0) {\n  alertCardBody.push({ type: \"TextBlock\", text: teamsText ? \"\\uD83D\\uDCEC \" + teamsText + \" \\uB2D8, \" + K.titleAlert : \"\\uD83D\\uDCEC \" + K.titleAlert, weight: \"Bolder\", size: \"Medium\", wrap: true });\n  alertCardBody.push({ type: \"FactSet\", facts: [\n    { title: K.factRecipients, value: activeUsers.length > 0 ? activeUsers.map((person) => person.name).join(\", \") : K.none },\n    { title: K.factVacation, value: vacationUsers.length > 0 ? vacationUsers.map((person) => person.name).join(\", \") : K.none },\n    { title: K.factRequestCount, value: String(deduped.length) + \"\\uAC74\" },\n  ] });\n  alertCardBody.push({ type: \"TextBlock\", text: \"-------------------------------------------------\", wrap: true, spacing: \"Medium\", isSubtle: true });\n  deduped.forEach((item, index) => {\n    alertCardBody.push({ type: \"TextBlock\", text: item.subject, weight: \"Bolder\", wrap: true, spacing: index === 0 ? \"Medium\" : \"Large\" });\n    alertCardBody.push({ type: \"FactSet\", facts: [\n      { title: K.factApplicant, value: item.applicantText },\n      { title: K.factComponent, value: item.productText },\n      { title: K.factQuantity, value: item.quantityText },\n      { title: K.factReceived, value: item.receivedText || item.receivedDateTime || K.unknown },\n    ] });\n    alertCardBody.push({ type: \"TextBlock\", text: \"-------------------------------------------------\", wrap: true, spacing: \"Medium\", isSubtle: true });\n  });\n  alertCardBody.push({ type: \"TextBlock\", text: \"[\" + K.linkText + \"](\" + ((deduped[0]?.manageUrl) || fallbackManageUrl) + \")\", wrap: true, spacing: \"Medium\" });\n  if (warningParts.length > 0) alertCardBody.push({ type: \"TextBlock\", text: warningParts.join(\" / \"), wrap: true, spacing: \"Medium\", color: \"Attention\" });\n}\n\nreturn [{ json: {\n  alertCount: isHoliday ? 0 : deduped.length,\n  teamsEntities,\n  alertCardBody,\n  debug: {\n    isHoliday,\n    holidayName: holiday.holiday_name || \"\",\n    holidayLookupSource: holiday.holiday_lookup_source || \"\",\n  },\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        -20
+      ],
+      "id": "e267f131-661d-4dbd-8232-0bd476177880",
+      "name": "Build Teams Payload",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8d3b63f7-1b11-4dd6-a520-6d0998d4ec8d",
+              "leftValue": "={{ $json.alertCount > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        360,
+        -20
+      ],
+      "id": "3ff54e92-6cef-4bb7-a1c7-a5281d01eb2b",
+      "name": "Should Send Alert"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://redacted.invalid/powerautomate/license-approval-webhook",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={{ ({ type: 'message', attachments: [{ contentType: 'application/vnd.microsoft.card.adaptive', content: { type: 'AdaptiveCard', body: Array.isArray($json.alertCardBody) ? $json.alertCardBody : [], msteams: { entities: Array.isArray($json.teamsEntities) ? $json.teamsEntities : [] }, '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json', version: '1.4' } }] }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        620,
+        -20
+      ],
+      "id": "780a40fd-a9ea-4819-a64d-a608a22b3db7",
+      "name": "Alert Teams Webhook",
+      "alwaysOutputData": false
+    }
+  ],
+  "connections": {
+    "Alert Schedule": {
+      "main": [
+        [
+          {
+            "node": "Set Alert Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Alert Mode": {
+      "main": [
+        [
+          {
+            "node": "Weekday Baseline",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Inbox Child Folders",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Inbox Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekday Baseline": {
+      "main": [
+        [
+          {
+            "node": "Holiday DB Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Holiday DB Fallback": {
+      "main": [
+        [
+          {
+            "node": "Determine Holiday",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inbox Child Folders": {
+      "main": [
+        [
+          {
+            "node": "Resolve License Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve License Folder": {
+      "main": [
+        [
+          {
+            "node": "License Folder Messages",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Vacation Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inbox Messages": {
+      "main": [
+        [
+          {
+            "node": "Build Teams Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "License Folder Messages": {
+      "main": [
+        [
+          {
+            "node": "Build Teams Payload",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Vacation Calendar": {
+      "main": [
+        [
+          {
+            "node": "Build Teams Payload",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Determine Holiday": {
+      "main": [
+        [
+          {
+            "node": "Build Teams Payload",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Build Teams Payload": {
+      "main": [
+        [
+          {
+            "node": "Should Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Send Alert": {
+      "main": [
+        [
+          {
+            "node": "Alert Teams Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
 }

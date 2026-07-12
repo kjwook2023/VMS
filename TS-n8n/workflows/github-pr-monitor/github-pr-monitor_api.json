@@ -68,7 +68,7 @@
                       "credentials":  {
                                           "githubApi":  {
                                                             "id":  "o72tcAaFcQlmQR4d",
-                                                            "name":  "jwkim-github"
+                                                            "name":  "__N8N_GITHUB_CREDENTIAL_NAME__"
                                                         }
                                       }
                   },

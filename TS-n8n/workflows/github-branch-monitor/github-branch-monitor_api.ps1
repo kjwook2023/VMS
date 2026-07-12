@@ -1,6 +1,6 @@
 param(
     [string]$EnvFile = (Join-Path $PSScriptRoot "..\..\n8n.env"),
-    [string]$WorkflowJson = (Join-Path $PSScriptRoot "Synchronize-Vacation_api.json")
+    [string]$WorkflowJson = (Join-Path $PSScriptRoot "github-branch-monitor_api.json")
 )
 
 $ErrorActionPreference = "Stop"
@@ -66,17 +66,25 @@ function New-PreparedWorkflowJson {
     )
 
     $raw = Get-Content -LiteralPath $SourcePath -Raw -Encoding UTF8
-    $redactedTeamsWebhook = "https://redacted.invalid/powerautomate/synchronize-vacation-webhook"
 
-    if ($raw.Contains($redactedTeamsWebhook)) {
-        if (-not $env:TS_MONITOR_TEAMS_WEBHOOK) {
-            throw "TS_MONITOR_TEAMS_WEBHOOK is required when Synchronize-Vacation_api.json contains the redacted Teams webhook placeholder."
+    if ($raw -match "__N8N_GITHUB_CREDENTIAL_NAME__") {
+        if (-not $env:N8N_GITHUB_CREDENTIAL_NAME) {
+            throw "N8N_GITHUB_CREDENTIAL_NAME is required when the workflow JSON contains __N8N_GITHUB_CREDENTIAL_NAME__."
         }
 
-        $raw = $raw.Replace($redactedTeamsWebhook, $env:TS_MONITOR_TEAMS_WEBHOOK)
+        $raw = $raw.Replace("__N8N_GITHUB_CREDENTIAL_NAME__", $env:N8N_GITHUB_CREDENTIAL_NAME)
     }
 
-    $tempFile = Join-Path ([System.IO.Path]::GetTempPath()) ("Synchronize-Vacation_" + [guid]::NewGuid().ToString() + ".json")
+    $redactedTeamsWebhook = "https://redacted.invalid/powerautomate/github-branch-monitor-webhook"
+    if ($raw.Contains($redactedTeamsWebhook)) {
+        if (-not $env:TS_GITHUB_BRANCH_MONITOR_TEAMS_WEBHOOK) {
+            throw "TS_GITHUB_BRANCH_MONITOR_TEAMS_WEBHOOK is required when github-branch-monitor_api.json contains the redacted Teams webhook placeholder."
+        }
+
+        $raw = $raw.Replace($redactedTeamsWebhook, $env:TS_GITHUB_BRANCH_MONITOR_TEAMS_WEBHOOK)
+    }
+
+    $tempFile = Join-Path ([System.IO.Path]::GetTempPath()) ("github-branch-monitor_" + [guid]::NewGuid().ToString() + ".json")
     [System.IO.File]::WriteAllText($tempFile, $raw, [System.Text.UTF8Encoding]::new($false))
 
     return [PSCustomObject]@{

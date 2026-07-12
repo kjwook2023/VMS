@@ -1,6 +1,6 @@
 # Lunch Recommendation Alert
 
-`Lunch-Recommendation-Alert` is an active n8n workflow for posting lunch recommendations to the Teams lunch channel.
+`Lunch-Recommendation-Alert` is currently an inactive n8n workflow that used to post lunch recommendations to the Teams lunch channel.
 
 ## Artifacts
 
@@ -11,10 +11,12 @@
 ## Current Server State
 
 - Workflow id: `7ofktWnZ4NjfSuEB`
-- Status: `active`
+- Status: `inactive`
 - Base URL: `https://n8n.vmsmozart-test.com:8443`
 - Weekday schedule: `11:30 KST`
 - Cron: `0 30 11 * * 1-5`
+- Deactivated at: `2026-07-06 12:01:24 KST`
+- Deactivation reason: repetitive recommendations; held until future improvement work
 
 ## Functional Summary
 
@@ -36,7 +38,7 @@
 
 ## Workflow Flow
 
-1. Run on weekday schedule or through the public reroll webhook.
+1. When enabled, run on weekday schedule or through the public reroll webhook.
 2. Check holiday status with SQL fallback.
 3. Resolve the office location through Kakao Local.
 4. Fetch weather from Open-Meteo.
@@ -50,6 +52,7 @@
 - Kakao runtime access uses the n8n credential `kakao-local-lunch-recommendation`.
 - Gemini API key is read from `workflows/Lunch-Recommendation-Alert/.env` as `GEMINI_TS_LUNCH_API_KEY`.
 - The reroll webhook is `https://n8n.vmsmozart-test.com:8443/webhook/lunch-menu-recommend-more`.
+- The workflow was deactivated on `2026-07-06`, so scheduled posts are currently stopped.
 - The Teams card is intentionally compact and uses:
   - walk section: `5` items
   - drive section: `5` items
